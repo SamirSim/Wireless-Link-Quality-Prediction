@@ -57,111 +57,120 @@ def create_dataset(dataset, look_back=1):
         dataY.append(dataset[i + look_back, 0])
     return np.array(dataX), np.array(dataY)
 
-log_filename = "../data/bursty-traffic.rawdata"
+log_filename_expe = "../data/merged-data.rawdata"
+log_filename_simu = "../data/cooja-data.rawdata"
 
-try:
-       log_file = open(log_filename, "r" )
-except IOError:
-    print(sys.argv[0]+": "+log_filename+": cannot open file")
-    sys.exit(3)
+series_list = [] # List containing both data from expe and simulation for comparison
 
-data = log_file.readlines()
+for log_filename in (log_filename_expe, log_filename_simu):
+    try:
+        log_file = open(log_filename, "r" )
+    except IOError:
+        print(sys.argv[0]+": "+log_filename+": cannot open file")
+        sys.exit(3)
 
-communication_dict = {}
+    data = log_file.readlines()
 
-list_nodes = []
+    communication_dict = {}
 
-for line in data:
-    receiver = "Received" in line
-    sender = "Sending" in line
-    if not sender and not receiver :
-        continue
-    
-    timestamp, node_id, event_type, message_id = line.split(";")
+    list_nodes = []
 
-    if node_id not in list_nodes:
-        list_nodes.append(node_id)
+    for line in data:
+        receiver = "Received" in line
+        sender = "Sending" in line
+        if not sender and not receiver :
+            continue
+        #print(line.replace(';',' ').split())
+        timestamp, node_id, event_type, message_id = line.replace(';',' ').split()
 
-    if event_type == "Sending broadcast":
-        sender = node_id
-        message_id = message_id.strip() 
-        if message_id not in communication_dict:
-            communication_dict[message_id] = {"sender": sender, "receivers_list": []}
+        if node_id not in list_nodes:
+            list_nodes.append(node_id)
 
-    elif event_type == "Received":
-        receiver = node_id
-        message_id = message_id.strip()  # Remove leading space
+        if event_type == "SendingBroadcast":
+            sender = node_id
+            message_id = message_id.strip() 
+            if message_id not in communication_dict:
+                communication_dict[message_id] = {"sender": sender, "receivers_list": []}
 
-        #print(communication_dict)
-        if message_id in communication_dict:
-            communication_dict[message_id]["receivers_list"].append(receiver)
-        else:
-            print("Message ", message_id," received before sending")
+        elif event_type == "Received":
+            receiver = node_id
+            message_id = message_id.strip()  # Remove leading space
 
-# Print the resulting dictionary
-#print(communication_dict)
+            #print(communication_dict)
+            if message_id in communication_dict:
+                communication_dict[message_id]["receivers_list"].append(receiver)
+                if sender == receiver:
+                    print(message_id)
+                    time.sleep(5)
+            else:
+                print("Message ", message_id," received before sending")
 
-temp_dict = {}
+    # Print the resulting dictionary
+    #print(communication_dict)
 
-for key, value in communication_dict.items():
-    sender = value.get("sender")
-    if sender not in temp_dict:
-        temp_dict[sender] = []
-    temp_dict[sender].append(value.get("receivers_list"))
+    temp_dict = {}
+    for key, value in communication_dict.items():
+        sender = value.get("sender")
+        if sender not in temp_dict:
+            temp_dict[sender] = []
+        temp_dict[sender].append(value.get("receivers_list"))
 
-#print(series_dict)
-first_node = 95
-nb_nodes = 5
+    #print(series_dict)
+    #first_node = 95 # To change here according to the data coming from expe or simu
+    first_node = 1
+    nb_nodes = 5
 
-series_dict = {}
+    series_dict = {}
 
-#print(list_nodes)
+    #print(list_nodes)
+    # Changed all node ids from ID to m3
+    for key, value in temp_dict.items():
+        #print(key,value)
+        sender = key
+        cpt = 1
 
-for key, value in temp_dict.items():
-    #print(key,value)
-    sender = key
-    cpt = 1
+        # Loop over all the other nodes
+        node = first_node
+        node_ids = []
+        while cpt <= nb_nodes:
+            if ("m3-"+str(node) in list_nodes):
+                node_ids.append(node)
+                receiver = "m3-"+str(node)
+                new_key = sender+'_'+receiver
+                series_dict[new_key] = []
+                for list in value:
+                    if receiver in list:
+                        series_dict[new_key].append(1)
+                    else:
+                        series_dict[new_key].append(0)
+                cpt = cpt + 1
+                node = node + 1
+            else:
+                node = node + 1
 
-    # Loop over all the other nodes
-    node = first_node
-    node_ids = []
-    while cpt <= nb_nodes:
-        if "m3-"+str(node) in list_nodes:
-            node_ids.append(node)
-            receiver = "m3-"+str(node)
-            new_key = sender+'_'+receiver
-            series_dict[new_key] = []
-            for list in value:
-                if receiver in list:
-                    series_dict[new_key].append(1)
-                else:
-                    series_dict[new_key].append(0)
-            cpt = cpt + 1
-            node = node + 1
-        else:
-            node = node + 1
+    print(series_dict)
+    series_list.append(series_dict)
 
-print(series_dict)
+    """
+    sender = "m3-110"
+    receiver = "m3-111"
 
-            
-sender = "m3-110"
-receiver = "m3-111"
-
-stop = False
-
-"""
-while stop == False:
-    random_senders = random.sample(node_ids, 3)
-    random_receivers = random.sample(node_ids, 3)
-    if not any(element in random_senders for element in random_receivers):        
-        stop = True
-"""
+    stop = False
+    while stop == False:
+        random_senders = random.sample(node_ids, 3)
+        random_receivers = random.sample(node_ids, 3)
+        if not any(element in random_senders for element in random_receivers):        
+            stop = True
+    """
 
 random_senders = random.sample(node_ids, 3)
 random_receivers = random.sample(node_ids, 3)
 Position = range(1,10)
 
 k = -1
+
+data_expe = series_list[0]
+data_simu = series_list[1]
 
 for n in random_senders:
     for m in random_receivers:
@@ -173,34 +182,51 @@ for n in random_senders:
         for elem in series_dict:
             print(elem)
         key = sender+"_"+receiver
-        data = series_dict[key]
+
+        data_expe_values = data_expe[key]
+        data_simu_values = data_simu[key]
 
         # Calculating PDR series
-        pdr_data = []
+        pdr_data_expe = []
+        pdr_data_simu = []
 
         i = 0
-        window_size = 40
+        window_size = 40 # Window on transmissions
 
-        while i < len(data):
+        while i < len(data_expe_values):
             try:
                 sum = 0
                 for j in range(0, window_size):
-                    sum = sum + data[i+j]
+                    sum = sum + data_expe_values[i+j]
                 avg = sum / window_size
-                pdr_data.append(avg)
+                pdr_data_expe.append(avg)
                 i = i + window_size
             except:
                 print("Exception occured")
                 break
 
-        print(pdr_data, len(pdr_data))
+        print(pdr_data_expe, len(pdr_data_expe))
 
-        #time.sleep(3)
+        while i < len(data_simu_values):
+            try:
+                sum = 0
+                for j in range(0, window_size):
+                    sum = sum + data_simu_values[i+j]
+                avg = sum / window_size
+                pdr_data_simu.append(avg)
+                i = i + window_size
+            except:
+                print("Exception occured")
+                break
 
-        data = pdr_data
+        print(pdr_data_expe, len(pdr_data_expe))
+        print(pdr_data_simu, len(pdr_data_simu))
 
-        x = np.arange(1, len(data) + 1) 
-        y = np.array(data)
+        time.sleep(3)
+
+        x = np.arange(1, len(pdr_data_expe) + 1) 
+        y_expe = np.array(pdr_data_expe)
+        y_simu = np.array(pdr_data_simu)
         
         fig = plt.figure(1)
         fig.tight_layout(pad=0.5)
@@ -208,7 +234,8 @@ for n in random_senders:
         print (k, Position[k])
         ax = fig.add_subplot(3,3,Position[k])
         ax.set_title(key)
-        ax.plot(y)      # Or whatever you want in the subplot
+        ax.plot(y_expe, label='expe')
+        ax.plot(y_simu, label='simu')
 
         #plt.show()
         # plotting
@@ -271,7 +298,8 @@ for n in random_senders:
         history = [x for x in train]
         predictions = []
         # walk-forward validation
-        print(test, size)
+        #print(train, test, size)
+
         cpt = 0
         for t in range(len(test)):
             model = ARIMA(history, order=best_cfg)
