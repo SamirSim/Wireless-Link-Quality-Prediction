@@ -1,0 +1,13 @@
+Steps:  1
+False Positive:  17  False Negative:  22  True Positive:  46  True Negative:  15
+False Positive:  20  False Negative:  1  True Positive:  79  True Negative:  0
+False Positive:  17  False Negative:  8  True Positive:  70  True Negative:  5
+False Positive:  22  False Negative:  7  True Positive:  52  True Negative:  19
+False Positive:  0  False Negative:  0  True Positive:  100  True Negative:  0
+False Positive:  13  False Negative:  13  True Positive:  70  True Negative:  4
+False Positive:  12  False Negative:  5  True Positive:  81  True Negative:  2
+False Positive:  14  False Negative:  25  True Positive:  40  True Negative:  21
+False Positive:  17  False Negative:  7  True Positive:  74  True Negative:  2
+False Positive:  0  False Negative:  0  True Positive:  100  True Negative:  0
+False Positive:  9  False Negative:  6  True Positive:  9  True Negative:  5
+False Positive:  7  False Negative:  9  True Positive:  6  True Negative:  7

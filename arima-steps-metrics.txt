@@ -1,0 +1,230 @@
+Step:  6
+False Positive:  11  False Negative:  36  True Positive:  29  True Negative:  20
+False Positive:  13  False Negative:  1  True Positive:  82  True Negative:  0
+False Positive:  14  False Negative:  6  True Positive:  22  True Negative:  0
+False Positive:  8  False Negative:  2  True Positive:  31  True Negative:  1
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  1  True Positive:  82  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  0  False Negative:  2  True Positive:  58  True Negative:  0
+False Positive:  14  False Negative:  2  True Positive:  72  True Negative:  2
+False Positive:  26  False Negative:  10  True Positive:  42  True Negative:  12
+False Positive:  40  False Negative:  7  True Positive:  65  True Negative:  2
+False Positive:  18  False Negative:  22  True Positive:  64  True Negative:  10
+False Positive:  16  False Negative:  28  True Positive:  8  True Negative:  14
+False Positive:  5  False Negative:  30  True Positive:  13  True Negative:  18
+False Positive:  0  False Negative:  0  True Positive:  66  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  59  True Negative:  0
+
+Mean Absolute Error (MAE):  [6.268093990073846, 3.5628778371622745, 3.9499556442080657, 4.249318743850228, 0.6285086321930046, 5.197608158055245, 0.5833971535254416, 5.523747727849528, 3.376304394390212, 3.2207238164385847, 2.942622670415492, 3.2888359969143637, 2.672065582218472, 2.4172302443559066, 0.23368393799320988, 2.781457435511691] 3.1810269978222228
+Mean Squared Error (MSE):  [114.93858454008762, 19.10676479530365, 44.20675583358466, 41.52516035562285, 1.0319975645400472, 52.64210227689932, 0.7128539070575785, 104.97093220023366, 22.692207871988675, 25.818279899739007, 13.22519478658272, 19.629030164021977, 11.834545582203354, 9.519802454010241, 0.2589477708000905, 10.403860228963165] 30.782313764477415
+R-squared (R²):  [-1.6385805545849292, -0.1932745420962576, -0.18260111147169145, -0.058210411108170934, -0.5365635820625814, 0.6306122304959495, -0.47487015253292086, 0.5175444691572678, -0.15439182386517247, -0.0943613010627431, -0.10452886045427356, -0.16368730389948571, -0.3261461825966048, -0.2021179119222114, -0.18360597020482117, -0.049736291053542825] -0.20090745620388684
+Root Mean Squared Error (RMSE):  [10.720941401765407, 4.371128549391296, 6.648816122708212, 6.444001889790447, 1.0158728092335414, 7.255487735286947, 0.8443067612293405, 10.245532304386808, 4.763633893572078, 5.081169146932526, 3.636646090367156, 4.4304661339436935, 3.4401374365282784, 3.085417711430697, 0.5088691096933381, 3.225501546885874] 4.732370540196603
+====================================
+Step:  9
+False Positive:  11  False Negative:  26  True Positive:  39  True Negative:  23
+False Positive:  13  False Negative:  7  True Positive:  78  True Negative:  1
+False Positive:  15  False Negative:  9  True Positive:  21  True Negative:  0
+False Positive:  9  False Negative:  1  True Positive:  35  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  81  True Negative:  0
+False Positive:  1  False Negative:  1  True Positive:  79  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  54  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  54  True Negative:  0
+False Positive:  16  False Negative:  0  True Positive:  74  True Negative:  0
+False Positive:  25  False Negative:  13  True Positive:  39  True Negative:  13
+False Positive:  37  False Negative:  9  True Positive:  60  True Negative:  2
+False Positive:  16  False Negative:  30  True Positive:  51  True Negative:  11
+False Positive:  13  False Negative:  24  True Positive:  10  True Negative:  16
+False Positive:  6  False Negative:  26  True Positive:  14  True Negative:  17
+False Positive:  0  False Negative:  0  True Positive:  63  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  56  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.050816654455699, 3.496378768519439, 3.5362740177324103, 4.127098031635815, 0.6609016018961997, 7.331553919307184, 0.5420186045323199, 6.870554727762848, 3.4310289298489263, 3.5016343946826574, 2.9213396537775886, 3.8918062070661277, 2.5685878287972703, 2.3814539153794754, 0.20347550253475016, 2.755437033556319] 3.2668974869678147
+Mean Squared Error (MSE):  [35.73140031106109, 20.68169538729224, 38.19750639292351, 38.718143882700666, 0.9889160664452533, 136.7631749883601, 0.64238780161562, 167.6229738834816, 22.44726543994468, 28.347340825184705, 12.89076714977438, 23.537871051804547, 10.81959802763427, 9.200362198407095, 0.26392485165879653, 10.233720751702096] 34.81794056312442
+R-squared (R²):  [0.16747068953117905, -0.2981024674090069, -0.07858926354226647, -0.02462416835427117, -0.44698445850742785, 0.06307226096197305, -0.3603506387154305, 0.26528449569166435, -0.14193117911591147, -0.2015607897810321, -0.10369008775448041, -0.3405880414475366, -0.17574703131312042, -0.13906786341873367, -0.1613278672214673, -0.051017897415142954] -0.1267346442381882
+Root Mean Squared Error (RMSE):  [5.977574785066356, 4.547713204160113, 6.1804131247776235, 6.222390527980437, 0.9944425908242533, 11.694578871783289, 0.8014909866090947, 12.946929129468563, 4.737854518655536, 5.324222086388274, 3.5903714501113084, 4.851584385724373, 3.2893157385137517, 3.033209883672262, 0.5137361693114438, 3.199018716997776] 4.869052885627778
+====================================
+Step:  7
+False Positive:  7  False Negative:  32  True Positive:  33  True Negative:  26
+False Positive:  13  False Negative:  7  True Positive:  77  True Negative:  1
+False Positive:  14  False Negative:  7  True Positive:  21  True Negative:  0
+False Positive:  9  False Negative:  3  True Positive:  30  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  7  True Positive:  76  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  56  True Negative:  0
+False Positive:  0  False Negative:  6  True Positive:  50  True Negative:  0
+False Positive:  14  False Negative:  7  True Positive:  68  True Negative:  2
+False Positive:  20  False Negative:  17  True Positive:  36  True Negative:  18
+False Positive:  39  False Negative:  5  True Positive:  67  True Negative:  1
+False Positive:  19  False Negative:  21  True Positive:  64  True Negative:  8
+False Positive:  17  False Negative:  28  True Positive:  6  True Negative:  12
+False Positive:  8  False Negative:  30  True Positive:  10  True Negative:  15
+False Positive:  0  False Negative:  0  True Positive:  63  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  56  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.485672861639103, 3.4013467666487447, 3.8776507263420603, 4.369472547745461, 0.6190593112958706, 7.089845285153984, 0.7116911110837113, 4.4128400899822875, 3.384416755852105, 3.2257020516944177, 2.820635450205868, 3.6008357481026643, 2.840021595680343, 2.489050342985866, 0.2625428845924154, 2.8279341972098515] 3.151169857888422
+Mean Squared Error (MSE):  [45.313225975513575, 19.853921295611304, 43.461993756446724, 46.041937602468806, 0.9816682182253864, 111.79148415153692, 0.9368189819486259, 54.20343736590056, 22.295862687458033, 26.36714621129381, 12.418532254326509, 20.74498807854092, 12.595399597968745, 9.952768963811605, 0.29996476947233774, 10.615482938480387] 27.367164553062764
+R-squared (R²):  [-0.053836782293591456, -0.23363672321062978, -0.16267753998137735, -0.17331413777256865, -0.461627125511358, 0.21556311024446573, -1.0177639611201172, 0.7582681352541238, -0.1468113426100024, -0.13004004645339062, -0.07862368596602876, -0.2197443118026161, -0.36872032100366736, -0.2322209750255244, -0.3199114967136456, -0.09022542521421761] -0.1697076643237591
+Root Mean Squared Error (RMSE):  [6.731509932809546, 4.455773927794285, 6.592571103632233, 6.785420959857156, 0.99079171283645, 10.573149206907889, 0.9678940964530293, 7.362298375229067, 4.721849498603067, 5.134894956208337, 3.523993793173664, 4.554666626498686, 3.548999802475163, 3.1548009388567775, 0.547690395636383, 3.2581410249527853] 4.5565278969952825
+====================================
+Step:  8
+False Positive:  11  False Negative:  34  True Positive:  31  True Negative:  20
+False Positive:  11  False Negative:  3  True Positive:  80  True Negative:  2
+False Positive:  13  False Negative:  8  True Positive:  19  True Negative:  0
+False Positive:  9  False Negative:  1  True Positive:  30  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  80  True Negative:  0
+False Positive:  1  False Negative:  9  True Positive:  70  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  56  True Negative:  0
+False Positive:  0  False Negative:  2  True Positive:  54  True Negative:  0
+False Positive:  14  False Negative:  4  True Positive:  70  True Negative:  0
+False Positive:  23  False Negative:  16  True Positive:  35  True Negative:  14
+False Positive:  37  False Negative:  8  True Positive:  64  True Negative:  3
+False Positive:  13  False Negative:  38  True Positive:  47  True Negative:  14
+False Positive:  18  False Negative:  22  True Positive:  13  True Negative:  11
+False Positive:  8  False Negative:  30  True Positive:  11  True Negative:  15
+False Positive:  0  False Negative:  0  True Positive:  64  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  57  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.367183394460169, 3.7051455542919314, 3.685870189957268, 4.055077147031772, 0.5812175511940577, 6.796606285156026, 0.5509920546283146, 5.377543641839602, 3.4912566696507317, 3.346720693657001, 2.857086869525808, 3.526010849916191, 2.6464406521201274, 2.4266317172921448, 0.23633366467879158, 2.7034515707862967] 3.1470980316366397
+Mean Squared Error (MSE):  [53.053916965109245, 20.872266617629585, 42.11031450806793, 40.76481129867548, 0.9096416988326569, 93.02396645293932, 0.648851108585197, 104.93939555017496, 24.78244593907838, 27.03556044646315, 12.882069957589303, 22.33314701232963, 10.763804277552735, 9.712757411186985, 0.2828468714890251, 9.939651408052688] 29.628465470234765
+R-squared (R²):  [-0.21792898536937244, -0.30353540526048683, -0.0798208733397765, 0.0074158348239903304, -0.32341597465992367, 0.3690911134932118, -0.3975254646450397, 0.5320002382799541, -0.2890600574437332, -0.13351369548632497, -0.11888470359984393, -0.3131233881555746, -0.17972124373477483, -0.22140041619249318, -0.2606537384320422, -0.036476888171685706] -0.12290960299336973
+Root Mean Squared Error (RMSE):  [7.283811980351308, 4.568617582773763, 6.489246066228952, 6.384732672451955, 0.9537513820868921, 9.644893283647017, 0.8055129474969331, 10.243993144773915, 4.978197057075822, 5.199573102328993, 3.589160062965889, 4.725795913106027, 3.280823719365723, 3.1165297064502666, 0.531833499780735, 3.152721270276313] 4.684324586947532
+====================================
+Step:  10
+False Positive:  12  False Negative:  26  True Positive:  39  True Negative:  230
+False Positive:  14  False Negative:  0  True Positive:  86  True Negative:  00
+False Positive:  12  False Negative:  9  True Positive:  18  True Negative:  10
+False Positive:  8  False Negative:  3  True Positive:  28  True Negative:  10
+False Positive:  0  False Negative:  0  True Positive:  80  True Negative:  00
+False Positive:  1  False Negative:  0  True Positive:  79  True Negative:  00
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  00
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  00
+False Positive:  16  False Negative:  0  True Positive:  74  True Negative:  00
+False Positive:  19  False Negative:  16  True Positive:  36  True Negative:  190
+False Positive:  38  False Negative:  7  True Positive:  63  True Negative:  20
+False Positive:  14  False Negative:  26  True Positive:  57  True Negative:  130
+False Positive:  12  False Negative:  23  True Positive:  9  True Negative:  160
+False Positive:  6  False Negative:  29  True Positive:  8  True Negative:  170
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  00
+False Positive:  6  False Negative:  0  True Positive:  54  True Negative:  0
+
+Mean Absolute Error (MAE):  [7.141175881487165, 3.396508711523866, 4.504281199436261, 4.308375158978338, 0.7245404741321357, 5.220925191853144, 0.539037009423671, 7.845659036195344, 3.212981244402913, 3.279931845861068, 2.863031862012911, 3.7004760321549193, 2.5692906436064025, 2.5128874190108292, 0.23621845083722384, 2.731703785884007] 3.4241889966750123
+Mean Squared Error (MSE):  [147.07139006950538, 17.46562494894742, 49.340032099420526, 45.22709308600688, 1.1533436977831626, 49.45829449567456, 0.659950485412711, 210.34659236861157, 21.114545907574783, 26.752403239694917, 12.546878002999735, 22.191240252003855, 10.5120593085413, 9.746081116417704, 0.24723083056835524, 9.996062871303703] 39.61430142377917
+R-squared (R²):  [-2.4491090625206464, -0.10361021799375836, -0.26521013140382155, -0.10123645869962417, -0.6779721904551581, 0.6645630293073266, -0.3654147974056088, 0.03322877338482477, -0.07413343372453718, -0.1339560547658185, -0.08310128370964187, -0.2835032171910987, -0.08961485447435114, -0.1497539657590683, -0.04586485316813049, -0.10671135246319774] -0.26446250444014435
+Root Mean Squared Error (RMSE):  [12.127299372469757, 4.179189508618557, 7.02424601643625, 6.72510915049019, 1.073938405022915, 7.032659134045568, 0.8123733657701433, 14.50333038886626, 4.595056681649834, 5.172272541126861, 3.5421572527204006, 4.710757927553044, 3.24223060693426, 3.1218714125373106, 0.497223119503061, 3.161655084177226] 5.095085622995102
+====================================
+Step:  4
+False Positive:  13  False Negative:  30  True Positive:  35  True Negative:  22
+False Positive:  11  False Negative:  9  True Positive:  77  True Negative:  3
+False Positive:  15  False Negative:  4  True Positive:  25  True Negative:  0
+False Positive:  9  False Negative:  2  True Positive:  33  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  5  True Positive:  78  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  0  False Negative:  2  True Positive:  58  True Negative:  0
+False Positive:  14  False Negative:  3  True Positive:  71  True Negative:  0
+False Positive:  23  False Negative:  14  True Positive:  37  True Negative:  14
+False Positive:  40  False Negative:  8  True Positive:  66  True Negative:  2
+False Positive:  17  False Negative:  24  True Positive:  64  True Negative:  11
+False Positive:  17  False Negative:  24  True Positive:  13  True Negative:  14
+False Positive:  6  False Negative:  27  True Positive:  18  True Negative:  17
+False Positive:  0  False Negative:  0  True Positive:  68  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  61  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.2010880090764005, 3.559315085641535, 3.648037642933221, 4.204724157190347, 0.5387530576348695, 5.6904411386530045, 0.6147960152613948, 5.44287143048165, 3.4025541129551353, 3.2318728867169244, 2.8904950580209214, 3.2442147014241964, 2.6063846356792957, 2.3831724155318113, 0.2140999739720891, 2.7846510621183156] 3.0410919614556944
+Mean Squared Error (MSE):  [40.54338107357732, 19.43251187598758, 40.139714709944094, 43.20740022394225, 0.8207740798255445, 70.9853456453578, 0.7103857548747678, 102.69068443062413, 22.63512657182234, 26.305188906207675, 13.23882632449336, 18.406751076850608, 10.489714180260185, 9.615100402801923, 0.24539792151045645, 10.593312633927543] 26.878725988250473
+R-squared (R²):  [0.04917915700656361, -0.22789300298798687, -0.11135643954081242, -0.12365706885111227, -0.22206834928234676, 0.501898340657279, -0.46976363077538186, 0.5280246861571647, -0.17736714247845398, -0.10289157669161986, -0.12097993293552944, -0.1075591718841189, -0.19084820823262638, -0.2334986200908915, -0.1496656424157552, -0.06906474648684968] -0.07671945930202986
+Root Mean Squared Error (RMSE):  [6.367368457500895, 4.408232284713179, 6.335591109750068, 6.573233620064196, 0.9059658270738166, 8.425280152336645, 0.8428438496392839, 10.133641222710825, 4.7576387601227506, 5.128858440843116, 3.638519798557287, 4.290308972189603, 3.238782823880012, 3.1008225364896203, 0.49537654517594637, 3.254736953108122] 4.49357508463471
+====================================
+Step:  3
+False Positive:  14  False Negative:  27  True Positive:  38  True Negative:  20
+False Positive:  12  False Negative:  6  True Positive:  79  True Negative:  2
+False Positive:  15  False Negative:  3  True Positive:  27  True Negative:  0
+False Positive:  8  False Negative:  3  True Positive:  33  True Negative:  1
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  1  True Positive:  82  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  0  False Negative:  6  True Positive:  54  True Negative:  0
+False Positive:  16  False Negative:  1  True Positive:  73  True Negative:  0
+False Positive:  26  False Negative:  10  True Positive:  42  True Negative:  12
+False Positive:  40  False Negative:  6  True Positive:  66  True Negative:  2
+False Positive:  19  False Negative:  22  True Positive:  64  True Negative:  9
+False Positive:  17  False Negative:  24  True Positive:  12  True Negative:  13
+False Positive:  9  False Negative:  27  True Positive:  16  True Negative:  14
+False Positive:  0  False Negative:  0  True Positive:  66  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  59  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.628235054046436, 3.433520357131756, 3.605512639679911, 4.193750192605709, 0.5646658694359188, 4.540943438528093, 0.6475911056823471, 4.290082977170251, 3.3030047769942263, 3.1194396553704085, 3.006017017252597, 3.4128323260222455, 2.643915017430921, 2.4871638085756, 0.2366031788142596, 2.8427170901247627] 2.9347496565540903
+Mean Squared Error (MSE):  [58.89306471849823, 18.12753865132752, 39.909264662587084, 40.943049741846565, 0.7981242221916949, 46.65242441594939, 0.8326177061071343, 45.40022112241717, 21.80061062197103, 24.860879175916853, 13.407108780535264, 19.786315976732784, 11.232616171186322, 10.034698215971666, 0.25538578720806193, 10.596584435557105] 22.72065652537524
+R-squared (R²):  [-0.3721881072292901, -0.1377888616326466, -0.12692446303007565, -0.0835033419660125, -0.188344484444946, 0.6726415881660932, -0.7226573229802777, 0.791336636506078, -0.10903473118352336, -0.05377988720290605, -0.11972177516619409, -0.1730118350559231, -0.25869565100937986, -0.2671366369658097, -0.16732475244314582, -0.06918191886608804] -0.08658222153150297
+Root Mean Squared Error (RMSE):  [7.674181696995337, 4.257644730520329, 6.3173779895291275, 6.398675624052728, 0.8933779839416768, 6.830258005079266, 0.912478879814286, 6.737968619874774, 4.669112401942261, 4.98606850894739, 3.6615719002274507, 4.448181198729744, 3.3515095361920606, 3.167759178973627, 0.5053570888075697, 3.255239535818694] 4.254172679965395
+====================================
+Step:  2
+False Positive:  12  False Negative:  30  True Positive:  35  True Negative:  23
+False Positive:  13  False Negative:  8  True Positive:  78  True Negative:  1
+False Positive:  15  False Negative:  2  True Positive:  27  True Negative:  0
+False Positive:  8  False Negative:  1  True Positive:  34  True Negative:  1
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  3  True Positive:  80  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  0  False Negative:  4  True Positive:  56  True Negative:  0
+False Positive:  16  False Negative:  1  True Positive:  73  True Negative:  0
+False Positive:  22  False Negative:  14  True Positive:  38  True Negative:  16
+False Positive:  41  False Negative:  7  True Positive:  67  True Negative:  1
+False Positive:  18  False Negative:  22  True Positive:  66  True Negative:  10
+False Positive:  16  False Negative:  23  True Positive:  14  True Negative:  15
+False Positive:  6  False Negative:  26  True Positive:  19  True Negative:  17
+False Positive:  0  False Negative:  0  True Positive:  68  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  61  True Negative:  0
+
+Mean Absolute Error (MAE):  [4.078321843937555, 3.402181392994929, 3.583045006873439, 4.178550647079317, 0.6907484965228164, 4.929180407685473, 0.6754442412725489, 4.653138956754589, 3.414981428293713, 3.2126037844463093, 2.882590328844972, 3.212645434838601, 2.5544914930265765, 2.31975211660087, 0.2463222373966561, 2.7865107823320763] 2.926281787431278
+Mean Squared Error (MSE):  [42.682049247295424, 18.446946801060307, 39.606112938855055, 42.07868264656812, 1.045828159201404, 46.81404213022537, 0.8249786784783105, 65.73394636838744, 22.931594759967577, 25.91846539575931, 12.906065866434314, 17.980560012097964, 10.213738521796554, 9.200927736556267, 0.2763809469668925, 10.350782200933633] 22.938193900661496
+R-squared (R²):  [-0.0009767555486210888, -0.16561755104356202, -0.09658249885051484, -0.09430349798178339, -0.5571562547636857, 0.6715075223821181, -0.7068524382309873, 0.6978810674077499, -0.16656984848852785, -0.09860787094261725, -0.09280388569269382, -0.0819146776020454, -0.1595179819986563, -0.18036538269437852, -0.29481813452371886, -0.04458885827096015] -0.08570544042768027
+Root Mean Squared Error (RMSE):  [6.53315002485749, 4.29499089650494, 6.293338775153858, 6.486808355930374, 1.022657400697518, 6.842078787198037, 0.9082833690420136, 8.107647400349094, 4.788694473441335, 5.091018109942186, 3.5925013384039697, 4.2403490436635005, 3.1958940097876454, 3.0333031066077565, 0.5257194565230514, 3.2172631538209044] 4.2608561063702295
+====================================
+Step:  5
+False Positive:  17  False Negative:  24  True Positive:  41  True Negative:  18
+False Positive:  13  False Negative:  5  True Positive:  81  True Negative:  1
+False Positive:  15  False Negative:  5  True Positive:  25  True Negative:  0
+False Positive:  8  False Negative:  3  True Positive:  33  True Negative:  1
+False Positive:  0  False Negative:  0  True Positive:  80  True Negative:  0
+False Positive:  1  False Negative:  1  True Positive:  78  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  60  True Negative:  0
+False Positive:  16  False Negative:  0  True Positive:  74  True Negative:  0
+False Positive:  20  False Negative:  15  True Positive:  37  True Negative:  18
+False Positive:  38  False Negative:  6  True Positive:  67  True Negative:  4
+False Positive:  18  False Negative:  21  True Positive:  66  True Negative:  10
+False Positive:  14  False Negative:  24  True Positive:  12  True Negative:  15
+False Positive:  7  False Negative:  26  True Positive:  16  True Negative:  16
+False Positive:  0  False Negative:  0  True Positive:  65  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  58  True Negative:  0
+
+Mean Absolute Error (MAE):  [5.014010211472613, 3.616602392451629, 3.8209648171128845, 3.9244881489458154, 0.6807988798603807, 4.911660947704528, 0.6431086794920803, 5.198040854735583, 3.312784796413595, 3.2454468001744536, 2.950108952958137, 3.383465063734239, 2.5495629948547682, 2.435677089749225, 0.2170554248200352, 2.7911707279032982] 3.0434341738989543
+Mean Squared Error (MSE):  [73.34748637205712, 19.99103706916938, 41.44119511652028, 37.70532497539187, 1.0795184774146998, 50.03541241835771, 0.8773180845294057, 117.1259681573122, 21.88867965478654, 25.934026204639284, 13.280910195097453, 19.46736436471071, 10.322949683864008, 9.128214290703161, 0.2190190687331819, 10.460559181648632] 28.269061457183476
+R-squared (R²):  [-0.7201406734471796, -0.2631848469388396, -0.17018183494092565, 0.0021787366026068122, -0.5705656411580085, 0.6606488893295678, -0.815140864543598, 0.4616788671075628, -0.11351495505558806, -0.09926744807624543, -0.11808541173953668, -0.16420022122824585, -0.14114239702578324, -0.1354503143796988, 0.011372259190498557, -0.07203858105238115] -0.14043965233473715
+Root Mean Squared Error (RMSE):  [8.564314705337322, 4.4711337565733125, 6.437483601262241, 6.140466185510011, 1.0389987860506382, 7.073571404768436, 0.9366525954319487, 10.82247514006441, 4.678533921517139, 5.092546141630852, 3.6442983131320976, 4.4121836277189, 3.212934746281662, 3.0212934797373063, 0.46799473152289, 3.234278773026319] 4.578072494347843
+====================================
+Step:  1
+False Positive:  14  False Negative:  25  True Positive:  40  True Negative:  21
+False Positive:  12  False Negative:  5  True Positive:  81  True Negative:  2
+False Positive:  15  False Negative:  1  True Positive:  29  True Negative:  0
+False Positive:  8  False Negative:  2  True Positive:  34  True Negative:  1
+False Positive:  0  False Negative:  0  True Positive:  84  True Negative:  0
+False Positive:  1  False Negative:  3  True Positive:  80  True Negative:  0
+False Positive:  0  False Negative:  0  True Positive:  61  True Negative:  0
+False Positive:  0  False Negative:  3  True Positive:  58  True Negative:  0
+False Positive:  16  False Negative:  1  True Positive:  74  True Negative:  0
+False Positive:  23  False Negative:  11  True Positive:  42  True Negative:  15
+False Positive:  41  False Negative:  8  True Positive:  66  True Negative:  1
+False Positive:  19  False Negative:  21  True Positive:  67  True Negative:  9
+False Positive:  17  False Negative:  24  True Positive:  13  True Negative:  14
+False Positive:  9  False Negative:  26  True Positive:  19  True Negative:  14
+False Positive:  0  False Negative:  0  True Positive:  68  True Negative:  0
+False Positive:  7  False Negative:  0  True Positive:  61  True Negative:  0
+
+Mean Absolute Error (MAE):  [3.707152001498129, 3.3144794316983077, 3.509745160760149, 4.21899197327013, 0.6190110682176784, 4.8697451930452065, 0.7015718732661103, 3.8243242410444713, 3.36175043104015, 3.118023102407278, 2.8841947429331705, 3.2284153357656002, 2.6546056603961223, 2.382944941091736, 0.25746760670703744, 2.7637039903274427] 2.838507922091795
+Mean Squared Error (MSE):  [30.56696381893837, 17.59859307497697, 38.3378443809728, 42.705173189089834, 0.8346455855860888, 48.04837799896561, 0.8827080116355857, 39.38531342262178, 22.186767447186153, 25.262798828044833, 12.791635898843994, 17.895200822631434, 10.967354064613154, 9.607522270411705, 0.2775102862279571, 10.277547949000784] 20.47662231560919
+R-squared (R²):  [0.2831454719247857, -0.11201214938657356, -0.08255201036715154, -0.13013559471911806, -0.2427219354073522, 0.6628462312548281, -0.841119120681622, 0.8182494341771763, -0.14119991322858017, -0.08271005638670581, -0.08311468105694053, -0.07677849942461834, -0.24507243118929645, -0.2325264393070614, -0.3001089802614725, -0.03719814304501701] -0.052688051069044964
+Root Mean Squared Error (RMSE):  [5.528739803873788, 4.19506770803249, 6.191756162913135, 6.534919524300956, 0.9135893966033586, 6.931693732340286, 0.93952541830202, 6.275771938385092, 4.710283159979467, 5.026211180207695, 3.5765396543088954, 4.23027195610772, 3.311699573423464, 3.0996003404328927, 0.5267924508076753, 3.205861498723983] 4.074895218671433
+====================================

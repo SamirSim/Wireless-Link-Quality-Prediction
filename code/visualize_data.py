@@ -1,16 +1,50 @@
 import sys
-import numpy as np
-import matplotlib.pyplot as plt
-from pandas import read_csv
+import numpy as np # type: ignore
+import matplotlib.pyplot as plt # type: ignore
+from pandas import read_csv # type: ignore
 import random
-from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.arima.model import ARIMA
+from sklearn.metrics import mean_squared_error # type: ignore
+from statsmodels.tsa.arima.model import ARIMA # type: ignore
 from math import sqrt
-from pandas import DataFrame
+from pandas import DataFrame # type: ignore
 import time
 import warnings
 import random
 import string
+import json
+
+def replace_message_id_in_remaining_lines(file_path, message_id, new_message_id):
+    # Used to replace the identical msg ids for two different nodes
+    updated_lines = []
+
+    with open(file_path, 'r') as file:
+        cpt = 0
+        line = 1
+        while line:
+            line = file.readline()
+            words = line.split(';')
+            if "SendingBroadcast" in line and message_id == words[-1]:
+                cpt = cpt + 1
+                if cpt == 2: # Look for the second occurence of the msg_id
+                    break
+            updated_lines.append(line)
+        
+        #print(line)
+        #time.sleep(1)
+        while line: 
+            if message_id not in line:
+                updated_lines.append(line)  # Append remaining lines as they are
+            else:                    
+                new_line = line.replace(message_id, new_message_id + '\n')
+                updated_lines.append(new_line)
+                #print("updated here: ", new_line)
+            line = file.readline()
+
+    #print("updated lines: ", updated_lines)
+    with open(file_path, 'w') as file:
+        file.writelines(updated_lines)
+
+    return updated_lines
 
 def generate_random_string(length):
     # Used to replace the identical ids among different nodes in Cooja
@@ -89,158 +123,209 @@ def evaluate_models(dataset, p_values, d_values, q_values):
     print('Best ARIMA%s MSE=%.3f' % (best_cfg, best_score))
     return best_cfg
 
-################# Main #################
-log_filename_expe = "../data/merged-data.rawdata"
-log_filename_simu = "../data/cooja-data.rawdata-new"
+def get_mean_pdr(data):
+    i = 0
+    sum = 0
 
-files = [log_filename_expe, log_filename_simu]
-series_list = [] # List containing both data from expe and simulation for comparison
-
-for log_filename in files:
-    try:
-        log_file = open(log_filename, "r" )
-    except IOError:
-        print(sys.argv[0]+": "+log_filename+": cannot open file")
-        sys.exit(3)
-
-    data = log_file.readlines()
-
-    communication_dict = {}
-    list_nodes = []
-    message_ids = []
-
-    for line in data:
-        receiver = "Received" in line
-        sender = "Sending" in line
-        if not sender and not receiver :
-            continue
-        
+    while i < len(data):
         try:
-            timestamp, node_id, event_type, message_id = line.split(";")
+            sum = sum + data[i]
+            i = i + 1
         except:
-            print(line)
+            print("Exception occured")
             break
+    avg = sum / len(data)
 
-        if log_filename == "../data/cooja-data.rawdata-new":
-            timestamp = convert_time_to_seconds_milliseconds(timestamp)
+    return avg
 
-        if node_id not in list_nodes:
-            list_nodes.append(node_id)
+################# Main #################
+log_filename_expe = "../data/expe-data-grenoble.rawdata"
+#log_filename_simu = "../data/cooja-grenoble-p1-reduced.rawdata"
+#log_filename_simu = "../data/cooja-grenoble-p0,56.rawdata"
+log_filename_simu = "../data/cooja-grenoble-customized-p.rawdata"
 
-        if event_type == "Sending broadcast":
-            if message_id in message_ids: # Found two identical message ids in different nodes
-                new_message_id = generate_random_string(5)
-                data = [line.replace(message_id, new_message_id) for line in data]
-                print ("replaced ", message_id, " with ", new_message_id)
-                message_id = new_message_id
+already_executed = True
 
-            message_ids.append(message_id)
-            sender = node_id
-            message_id = message_id.strip() 
-            if message_id not in communication_dict:
-                communication_dict[message_id] = {"sender": sender, "receivers_list": [], "timestamp": timestamp}
+period = 50 # in seconds
+if not already_executed:
+    files = [log_filename_expe, log_filename_simu]
+    series_list = [] # List containing both data from expe and simulation for comparison
 
-        elif event_type == "Received":
-            receiver = node_id
-            message_id = message_id.strip()  # Remove leading space
- 
-            if message_id in communication_dict:
-                communication_dict[message_id]["receivers_list"].append(receiver)
-            else:
-                print("Message ", message_id," received before sending")
-
-    # Write the modified content back to another file
-    with open(log_filename+"-new", 'w') as file:
-        file.writelines(data)
-
-    # Print the resulting dictionary
-    print(communication_dict)
-
-    temp_dict = {}
-
-    for key, value in communication_dict.items():
-        sender = value.get("sender")
-        # Add timestamp in the beginning of the receivers_list
-        l = [value.get("timestamp"), value.get("receivers_list")]
-        if sender not in temp_dict:
-            temp_dict[sender] = []
-        temp_dict[sender].append(l)
-    print("=====================")
-    print("temp dict: ", temp_dict)
-    time.sleep(2)
-    
-    period = 100 # in seconds
-    series_dict = {}
-    first_timestamp = 0
-
-    for key, value in temp_dict.items():
-        first_timestamp = value[0][0]
-        l = []
-        save = []
-        for list in value:
-            if float(list[0]) >= float(first_timestamp) + float(period):
-                save.append(l)
-                l = []
-                first_timestamp = list[0]
-            
-            for elem in list[1]:
-                l.append(elem)
-        series_dict[key] = save
-    
-    print("=====================")      
-    # Structure of series_dict: For each node, there is a list of the reached nodes during a window with length 'period', successively
-    print("series_dict: ", series_dict)
-    time.sleep(2)  
-
-    first_node = 95
-    nb_nodes = 5
-    final_dict = {}
-    for key, value in series_dict.items():
-        sender = key
-        cpt = 1
-
-        # Loop over all the other nodes
-        node = first_node
-        node_ids = []
+    found = 0 # Used to determine if two identical message ids have been found for two different nodes
+    for log_filename in files:
         try:
-            first_timestamp = value[0][0]
-        except:
-            print(key, value)
-            time.sleep(2)
+            log_file = open(log_filename, "r" )
+        except IOError:
+            print(sys.argv[0]+": "+log_filename+": cannot open file")
+            sys.exit(3)
+
+        data = log_file.readlines()
+
+        communication_dict = {}
+        list_nodes = []
+        message_ids = []
+        new_data = []
+
+        for line in data:
+            receiver = "Received" in line
+            sender = "SendingBroadcast" in line
+            if not sender and not receiver :
+                continue
+            
+            try:
+                timestamp, node_id, event_type, message_id = line.split(";")
+            except:
+                print(line)
+                break
+
+            if "cooja" in log_filename:
+                #print("here")
+                timestamp = convert_time_to_seconds_milliseconds(timestamp)
+
+            if node_id not in list_nodes:
+                list_nodes.append(node_id)
+
+            if event_type == "SendingBroadcast":
+                if message_id in message_ids: # Found two identical message ids in different nodes
+                    new_message_id = generate_random_string(10)
+                    data = replace_message_id_in_remaining_lines(log_filename, message_id, new_message_id)
+                    #data = [line.replace(message_id, new_message_id+'\n') for line in data]
+                    print ("replaced ", message_id, " with ", new_message_id)
+                    found = 1
+                    message_id = new_message_id
+                
+                message_ids.append(message_id)
+                sender = node_id
+                message_id = message_id.strip() 
+                if message_id not in communication_dict:
+                    communication_dict[message_id] = {"sender": sender, "receivers_list": [], "timestamp": timestamp}
+
+            elif event_type == "Received":
+                receiver = node_id
+                message_id = message_id.strip()  # Remove leading space
+    
+                if message_id in communication_dict:
+                    communication_dict[message_id]["receivers_list"].append(receiver)
+                else:
+                    print("Message ", message_id," received before sending")
+
+        time.sleep(3)
+
+        # Print the resulting dictionary
+        print(communication_dict)
+
+        temp_dict = {}
+
+        for key, value in communication_dict.items():
+            sender = value.get("sender")
+            # Add timestamp in the beginning of the receivers_list
+            l = [value.get("timestamp"), value.get("receivers_list")]
+            if sender not in temp_dict:
+                temp_dict[sender] = []
+            temp_dict[sender].append(l)
+        print("=====================")
+        print("temp dict: ", temp_dict)
+        time.sleep(2)
         
-        l = []
-        while cpt <= nb_nodes:
-            if "m3-"+str(node) in list_nodes:
-                l = []
-                node_ids.append(node)
-                receiver = "m3-"+str(node)
-                new_key = sender+'_'+receiver
-                final_dict[new_key] = []
+        series_dict = {}
+        first_timestamp = 0
 
-                for list in value:
-                    if receiver in list:
-                        final_dict[new_key].append(list.count(receiver))
-                    else:
-                        final_dict[new_key].append(0)
-                cpt = cpt + 1
-                node = node + 1
-            else:
-                node = node + 1
+        for key, value in temp_dict.items():
+            first_timestamp = value[0][0]
+            l = []
+            save = []
+            for list in value:
+                if float(list[0]) >= float(first_timestamp) + float(period):
+                    save.append(l)
+                    l = []
+                    first_timestamp = list[0]
+                
+                for elem in list[1]:
+                    l.append(elem)
+            series_dict[key] = save
+        
+        print("=====================")      
+        # Structure of series_dict: For each node, there is a list of the reached nodes during a window with length 'period', successively
+        print("series_dict: ", series_dict)
+        time.sleep(2)  
 
-    print("=====================")
-    print(final_dict)
-    time.sleep(2)
+        first_node = 2
+        nb_nodes = 11
+        final_dict = {}
+        for key, value in series_dict.items():
+            sender = key
+            cpt = 1
 
-    series_list.append(final_dict)
+            # Loop over all the other nodes
+            node = first_node
+            node_ids = []
+            try:
+                first_timestamp = value[0][0]
+            except:
+                print(key, value)
+                time.sleep(2)
+            
+            l = []
+            while cpt <= nb_nodes:
+                if "m3-"+str(node) in list_nodes:
+                    l = []
+                    node_ids.append(node)
+                    receiver = "m3-"+str(node)
+                    new_key = sender+'_'+receiver
+                    final_dict[new_key] = []
 
-random_senders = random.sample(node_ids, 3)
-random_receivers = random.sample(node_ids, 3)
+                    for list in value:
+                        if receiver in list:
+                            final_dict[new_key].append(list.count(receiver))
+                        else:
+                            final_dict[new_key].append(0)
+                    cpt = cpt + 1
+                    node = node + 1
+                else:
+                    node = node + 1
+
+        print("=====================")
+        print(final_dict)
+        time.sleep(2)
+
+        series_list.append(final_dict)
+    
+    # Store series_list in a file in JSON format
+    with open('../data/series_list_customized_p.json', 'w') as file:
+        json.dump(series_list, file)
+
+    random_senders = random.sample(node_ids, 3)
+    random_receivers = random.sample(node_ids, 3)
+    Position = range(1,10)
+
+    k = -1
+
+    data_expe = series_list[0]
+    data_simu = series_list[1]
+else:
+    # Load the series_list from the file
+    with open('../data/series_list_customized_p.json', 'r') as file:
+        series_list = json.load(file)
+
+    data_expe = series_list[0]
+    data_simu = series_list[1]
+
+#random_senders = random.sample(range(2, 13), 4)
+random_senders = [2, 7, 11]
+#random_receivers = random.sample(range(2, 13), 4)
+random_receivers= [6, 9, 10]
+
+couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6)]
 Position = range(1,10)
 
 k = -1
+mean_pdr_total = 0
 
-data_expe = series_list[0]
-data_simu = series_list[1]
+for key, value in data_expe.items():
+    mean_pdr = get_mean_pdr(value) / period # This only works because the sending period is the same for all nodes and equal to 1
+    print(key, mean_pdr, len(value))
+    mean_pdr_total = mean_pdr_total + mean_pdr
+print("Mean PDR of the network: ", mean_pdr_total/len(data_expe))
 
 for n in random_senders:
     for m in random_receivers:
@@ -252,6 +337,13 @@ for n in random_senders:
         data_expe_values = data_expe[key]
         data_simu_values = data_simu[key]
 
+        print(key, " with data expe size: ", len(data_expe_values))
+        print(key, " with data simu size: ", len(data_simu_values))
+
+        data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+
+        #print(key, get_mean_pdr(data_expe_values)/period)
+        #time.sleep(1)
         """
         # Calculating PDR series
         pdr_data = []
@@ -283,9 +375,10 @@ for n in random_senders:
         y_sim = np.array(data_simu_values)
         
         fig = plt.figure(1)
-        fig.tight_layout(pad=0.5)
+        #fig.tight_layout(pad=0.5)
+        fig.subplots_adjust(hspace=0.5, wspace=0.5)
 
-        print (k, Position[k])
+        #print (k, Position[k])
         ax = fig.add_subplot(3,3,Position[k])
         ax.set_title(key)
         ax.plot(y_exp, label='experiments') 
@@ -294,22 +387,26 @@ for n in random_senders:
 
 plt.show()
 
+exit()
+
 k = -1
 
 for n in random_senders:
     for m in random_receivers:
         k = k + 1
-        print(k)
+        #print(k)
         sender = "m3-"+str(n)
         receiver = "m3-"+str(m)
 
-        for elem in final_dict:
-            print(elem)
+        #for elem in final_dict:
+            #print(elem)
         key = sender+"_"+receiver
         data_expe_values = data_expe[key]
         data_simu_values = data_simu[key]
         #data = final_dict[key]
 
+        data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+        
         """
         # Calculating PDR series
         pdr_data = []
@@ -363,6 +460,8 @@ for n in random_senders:
                     obs = test[t]
                     history.append(obs)
                     print('predicted=%f, expected=%f' % (yhat, obs))
+            except KeyboardInterrupt:
+                break
             except:
                 print("Exception occured")
                 pass
@@ -379,8 +478,11 @@ for n in random_senders:
         ax = fig.add_subplot(3,3,Position[k])
         ax.set_title(key)
 
+        #print("data simu: ", data_simu_values, len(data_simu_values))
+        #time.sleep(4)
+
         size_simu = int(len(data_simu_values) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-        train_simu, test_simu = X[0:size_simu], X[size_simu:len(data_simu_values)] 
+        train_simu, test_simu = data_simu_values[0:size_simu], data_simu_values[size_simu:len(data_simu_values)] 
 
         ax.plot(test, label='observations')      # Plotting the simulation results to compare with the predictions
         ax.plot(test_simu, label='simulations')      # Plotting the simulation results to compare with the predictions
