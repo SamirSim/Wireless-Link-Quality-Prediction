@@ -1,6 +1,14 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+import json
+import time
+from sklearn.metrics import roc_curve, auc
+import numpy as np
+from scipy.special import softmax
+
+threshold = 35
+SLA = threshold
 
 MEAN = False
 if MEAN: # Plot mean values for the metrics
@@ -174,29 +182,181 @@ else:
                     
     
     # Parse the data from the file
-    file_path = '../arima-steps-metrics.txt'
-    df = parse_data(file_path)
+    result = []
+    filenames = ['../data/result-1.json', '../data/result-2.json', '../data/result-3.json', '../data/result-4.json', '../data/result-5.json']
+    #for filename in filenames:
+    #    with open(filename, 'r') as file:
+    #        series_list = json.load(file)
+    #        result.extend(series_list)
 
-
+    with open('../data/result-complete-arima.json', 'r') as file:
+        result = json.load(file)
+    #with open('../data/result-complete.json', 'w') as file:
+    #    json.dump(result, file)
     # Ensure 'Step' is treated as a categorical variable
-    print(df)
+    #print(result)
 
+    accuracy = 0
+    recall = 0
+    specificity = 0
+    precision = 0
+
+    data = []
+
+    # Load the series_list from the file
+    with open('../data/series_list_customized_p.json', 'r') as file:
+        series_list = json.load(file)
+
+    data_expe = series_list[0]
+    cpt = 0
+    for elem in result:
+        # Initialize lists to collect all ground truths and predictions
+        all_ground_truths = []
+        all_predictions = []
+
+        for key, value in elem.items():
+            for key_2, value_2 in value.items():
+                print(key_2, value_2)
+                for elem in value_2:
+                    for key_3, value_3 in elem.items():
+                        print(key_3, value_3["true_positive"], key)
+                        step = key
+
+                        y_pred = value_3["prediction"]
+                        y = data_expe[key_3]
+
+                        print(key_3, y_pred, y)
+
+                        true_positive = 0
+                        true_negative = 0
+                        false_positive = 0
+                        false_negative = 0
+
+                        for i in range(len(y_pred)):
+                            if y[i] <= SLA and y_pred[i] <= SLA:
+                                true_positive += 1
+                            elif y[i] >= SLA and y_pred[i] >= SLA:
+                                true_negative += 1
+                            elif y[i] > SLA and y_pred[i] < SLA:
+                                false_positive += 1
+                                #print("here, ", i, y[i], y_pred[i])
+                                #time.sleep(1)
+                            elif y[i] < SLA and y_pred[i] > SLA:
+                                false_negative += 1
+
+                        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_negative + false_positive)
+                        try:
+                            recall = true_positive  / (true_positive + false_negative)
+                            specificity = true_negative / (true_negative + false_positive)
+                            precision = true_positive / (true_positive + false_positive)
+                        except ZeroDivisionError:
+                            if (true_positive + false_negative) == 0:
+                                recall = 0
+                            if (true_negative + false_positive) == 0:
+                                specificity = 0
+                            if (true_positive + false_positive) == 0:
+                                precision = 0
+
+                        """
+                        accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
+                        recall = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_negative"])
+                        try:
+                            specificity = value_3["true_negative"] / (value_3["true_negative"] + value_3["false_positive"])
+                            precision = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_positive"])
+                        except ZeroDivisionError:
+                            specificity = 0
+                            precision = 0
+                        """
+                        data.append({
+                            "Step": int(step),
+                            "Accuracy": float(accuracy),
+                            "Recall": float(recall),
+                            "Specificity": float(specificity),
+                            "Precision": float(precision)
+                        })
+
+                        predictions = value_3["prediction"][:len(data_expe[key_3])]
+
+                        size = int(len(data_expe[key_3]) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+
+                        # Convert ground truth values to binary classes based on the threshold
+                        y_true = np.array([1 if val >= threshold else 0 for val in data_expe[key_3][size:len(data_expe[key_3])]])
+
+                        print("y_true: ", y_true, "predictions: ", predictions)
+                        #time.sleep(1)
+                        # Use predicted values as scores
+                        y_scores = np.array(predictions)
+
+                        all_ground_truths.extend(y_true)
+                        all_predictions.extend(y_scores)
+
+                        # Convert lists to numpy arrays
+                        
+        all_ground_truths = np.array(all_ground_truths[:len(all_predictions)])
+        all_predictions = np.array(all_predictions)
+
+        # Applying softmax along axis 1
+        probabilities = np.array(softmax(all_predictions))
+        print(probabilities)
+
+        #time.sleep(1)
+
+        # Compute ROC curve and ROC area
+        fpr, tpr, thresholds = roc_curve(all_ground_truths, probabilities)
+        roc_auc = auc(fpr, tpr)
+        plt.plot(fpr, tpr, lw=2, label=f'Step {step}')
+        if cpt == 0:
+            plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+            cpt += 1
+
+        # Print TPR, FPR, and thresholds for reference
+        print(f"False Positive Rate: {fpr}")
+        print(f"True Positive Rate: {tpr}")
+        print(f"Thresholds: {thresholds}")
+
+        # Plot ROC curve
+        
+    #plt.figure()
+    
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC)')
+    plt.legend(loc="lower right")
+    plt.show()
+        
+
+    df = pd.DataFrame(data)
+    df_sorted = df.sort_values(by="Step")
+    #mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
+    #print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
+    print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
+    print("Mean Recall: ", df_sorted["Recall"].mean())
+    print("Mean Specificity: ", df_sorted["Specificity"].mean())
+    print("Mean Precision: ", df_sorted["Precision"].mean())
+
+    print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
 
     # Accuracy
-    plt.subplot(1, 2, 1)
-    sns.violinplot(x="Step", y="Accuracy", data=df)
+    plt.subplot(2, 2, 1)
+    sns.violinplot(x="Step", y="Accuracy", data=df_sorted)
     plt.title('Accuracy')
 
     # Recall
-    plt.subplot(1, 2, 2)
-    sns.violinplot(x="Step", y="Recall", data=df)
+    plt.subplot(2, 2, 2)
+    sns.violinplot(x="Step", y="Recall", data=df_sorted)
     plt.title('Recall')
 
-    plt.subplot(1, 2, 3)
+    plt.subplot(2, 2, 3)
     sns.violinplot(x="Step", y="Specificity", data=df)
     plt.title('Specificity')
+
+    plt.subplot(2, 2, 4)
+    sns.violinplot(x="Step", y="Precision", data=df)
+    plt.title('Precision')
 
     plt.tight_layout()
     plt.show()

@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt # type: ignore
 from pandas import read_csv # type: ignore
 import random
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score # type: ignore
+import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from kerastuner.tuners import RandomSearch
 from statsmodels.tsa.arima.model import ARIMA # type: ignore
 from math import sqrt
 from pandas import DataFrame # type: ignore
@@ -454,32 +456,68 @@ for steps in steps_list:
                 y.append(data[i + time_step, 0])
             return np.array(X), np.array(y)
 
-        time_step = 10  # Number of past observations to use
+        time_step = 1  # Number of past observations to use
         X_train, y_train = create_sequences(scaled_train, time_step)
         X_test, y_test = create_sequences(scaled_test, time_step)
 
-        # Reshape input to be [samples, time steps, features]
-        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-        X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+        # Define a function to build the LSTM model
+        def build_model(hp):
+            model = Sequential()
+            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32),
+                        return_sequences=True,
+                        input_shape=(time_step, 1)))
+            model.add(Dropout(rate=hp.Float('dropout_rate', min_value=0.1, max_value=0.5, step=0.1)))
+            model.add(LSTM(units=hp.Int('units', min_value=32, max_value=512, step=32)))
+            model.add(Dropout(rate=hp.Float('dropout_rate', min_value=0.1, max_value=0.5, step=0.1)))
+            model.add(Dense(1))
+            
+            model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=hp.Float('learning_rate', min_value=1e-4, max_value=1e-2, sampling='LOG')),
+                        loss='mse')
+            return model
 
-        # Build LSTM model
-        model = Sequential()
-        model.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
-        model.add(LSTM(50, return_sequences=False))
-        model.add(Dense(25))
-        model.add(Dense(1))
-
-        # Compile the model
-        model.compile(optimizer='adam', loss='mean_squared_error')
-        print(len(X_train), len(y_train))
-        # Train the model
-        model.fit(X_train, y_train, epochs=30, batch_size=1, verbose=1)
+        # Define the tuner
+        tuner = RandomSearch(
+            build_model,
+            objective='val_loss',
+            max_trials=20,
+            executions_per_trial=1,
+            directory='my_dir',
+            project_name='lstm_tuning')
 
         # Metrics
         false_negative = 0
         false_positive = 0
         true_positive = 0
         true_negative = 0 
+
+        # Make predictions
+        #train_predict = model.predict(X_train)
+        #test_predict = model.predict(X_test)
+
+        # Inverse transform to get actual values
+        #train_predict = scaler.inverse_transform(train_predict)
+        #test_predict = scaler.inverse_transform(test_predict)
+
+        # Reshape input to be [samples, time steps, features]
+        X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+        X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+        
+        #y_train = scaler.inverse_transform([y_train])
+        #y_test = scaler.inverse_transform([y_test])
+
+
+        # Search for the best hyperparameters
+        tuner.search(X_train, y_train, epochs=30, validation_data=(X_test, y_test))
+
+        # Get the optimal hyperparameters
+        best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+        print(f"The best hyperparameters are: {best_hps.values}")
+
+        model = tuner.hypermodel.build(best_hps)
+
+        # Optionally, retrain on the full training data
+        model.fit(X_train, y_train, epochs=30, batch_size=1)
 
         # Make predictions
         train_predict = model.predict(X_train)
