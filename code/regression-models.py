@@ -11,6 +11,7 @@ from sklearn.tree import DecisionTreeRegressor # type: ignore
 from sklearn.linear_model import LinearRegression # type: ignore
 from sklearn.svm import SVR # type: ignore
 from sklearn.neighbors import KNeighborsRegressor # type: ignore
+from sklearn.model_selection import train_test_split # type: ignore
 from scipy.special import softmax # type: ignore
 from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.layers import LSTM, Dense # type: ignore
@@ -27,47 +28,20 @@ warnings.filterwarnings("ignore")
 
 random.seed(10)
 
-SLA = 40 # Required number of packets correctly received in a window of 50 seconds
-
 def evaluate_model(model, x, y):
     # Evaluate the model
-    y_pred = model.predict(x)
+    X_train, X_val, y_train, y_val = train_test_split(x, y, test_size=0.2)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_val)
 
     if 'Sequential' in str(regressor): # LSTM
         y_pred = scaler.inverse_transform(y_pred)
         #test_predict = scaler.inverse_transform(test_predict)
 
-    true_positive = 0
-    true_negative = 0
-    false_positive = 0
-    false_negative = 0
-    for i in range(len(y_test)):
-        if y[i] <= SLA and y_pred[i] <= SLA:
-            true_positive += 1
-        elif y[i] >= SLA and y_pred[i] >= SLA:
-            true_negative += 1
-        elif y[i] > SLA and y_pred[i] < SLA:
-            false_positive += 1
-            #print("here, ", i, y[i], y_pred[i])
-            #time.sleep(1)
-        elif y[i] < SLA and y_pred[i] > SLA:
-            false_negative += 1
-            #print("here, ", i, y[i], y_pred[i])
-            #time.sleep(1)
-
-    y_true = np.array([1 if val >= SLA else 0 for val in y])
-    y = y_true[:len(y_pred)]
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-    # Applying softmax along axis 1
-    probabilities = np.array(softmax(y_pred))
-    #print(probabilities)
-
-    #time.sleep(1)
-
-    # Compute ROC curve and ROC area
-    fpr, tpr, thresholds = roc_curve(y, probabilities)
-    roc_auc = auc(fpr, tpr)
-    return accuracy, roc_auc, fpr, tpr, thresholds
+    mse = mean_squared_error(y_val, y_pred)
+    mae = mean_absolute_error(y_val, y_pred)
+    
+    return mse, mae
 
 
 # Load the series_list from the file
@@ -96,6 +70,7 @@ Position = range(1,17)
 
 #couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
 #couples = [(2, 10), (2, 9)]
+#couples = [(5,6)]
 k = -1
 
 for n, m in couples:
@@ -118,30 +93,6 @@ for n, m in couples:
     y_exp = np.array(data_expe_values)
     y_sim = np.array(data_simu_values)
     y_sim_pdr = np.array(data_simu_pdr_values)
-    
-    """
-    fig = plt.figure(1)
-    fig.subplots_adjust(hspace=0.5, wspace=0.5)
-
-    # Initialize lists to hold the legend handles and labels
-    handles = []
-    labels = []
-
-    
-    # Loop over your subplots and collect handles and labels
-    ax = fig.add_subplot(4, 4, Position[k])  # Adjust according to the number of subplots
-    ax.set_title(key)  # Replace with your actual title or key
-    line1, = ax.plot(y_exp, label='experiments') 
-    line2, = ax.plot(y_sim, label='simulation')  
-    line3, = ax.plot(y_sim_pdr, label='simulation_pdr')
-
-    # Collect the handles and labels
-    if k == 0:  # Collect only once, to avoid duplicates
-        handles.extend([line1, line2, line3])
-        labels.extend([line1.get_label(), line2.get_label(), line3.get_label()])
-
-    fig.legend(handles, labels, loc='upper center')
-    """
 
 #plt.show()
 
@@ -151,13 +102,11 @@ mse_list = []
 r_squared_list = []
 rmse_list = []
 
-steps_list = [19, 21, 23, 25]
+steps_list = [1, 2, 3, 5, 7, 10, 15, 20]
 elems = []
-for steps in steps_list:
+for prediction_step in steps_list:
     results = []
     elem = {}
-
-    #print("Steps: ", steps)
 
     for n, m in couples:
         result = {}
@@ -181,7 +130,9 @@ for steps in steps_list:
         history = [x for x in train]
         predictions = []
 
-        randomForestRegressor = RandomForestRegressor(n_estimators = 100, random_state = 1)
+        #print(X)
+
+        randomForestRegressor = RandomForestRegressor()
         linearRegressor = LinearRegression()
         svr = SVR(kernel='rbf')
         gradientBoostingRegressor = GradientBoostingRegressor()
@@ -191,207 +142,191 @@ for steps in steps_list:
         kNeighborsRegressor = KNeighborsRegressor()
         lstm = Sequential()
 
-        #regressors = [randomForestRegressor, linearRegressor, svr, gradientBoostingRegressor, decisionTreeRegressor, adaBoostRegressor, extraTreesRegressor, kNeighborsRegressor]
-        regressors = [lstm]
+        regressors = [randomForestRegressor, svr, gradientBoostingRegressor, decisionTreeRegressor, adaBoostRegressor, extraTreesRegressor]
+        #regressors = [kNeighborsRegressor] # Seems like that there is a problem with KNeighborsRegressor
+        regressor_strings = [str(regressor) for regressor in regressors]
+
+        #regressors = [lstm]
         max_accuracy = 0
         min_auc = 0
+        min_mse = float("inf")
+        min_mae = float("inf")
 
-        for regressor in regressors:
-            time_steps = [3, 5, 10, 15, 20]
-            for time_step in time_steps:
+        for regressor_string in regressor_strings:
+            window_steps = [3, 5, 10, 15, 20]
+            for window_step in window_steps:
                 # Prepare sequences
-                def create_sequences(data, time_step):
+                def create_sequences(data, window_step):
                     X, y = [], []
-                    for i in range(len(data) - time_step):
-                        a = data[i:(i + time_step)]
+                    for i in range(len(data) - window_step):
+                        a = data[i:(i + window_step)]
                         X.append(a)
-                        y.append(data[i + time_step])
+                        y.append(data[i + window_step])
                     #print(data, X, y)
                     #print(X[-1], y[-1])
                     #time.sleep(5)
                     return np.array(X), np.array(y)
 
-                X_train, y_train = create_sequences(train, time_step)
-                X_test, y_test = create_sequences(test, time_step)
+                X_train, y_train = create_sequences(train, window_step)
                 
-                #print(str(regressor))
-                # Compile the model
-                
-                if 'Sequential' in str(regressor): # LSTM
+                regressor = RandomForestRegressor() # Default
+                if 'Sequential' in regressor_string: # LSTM
                     regressor = Sequential()
                     # Normalize data
                     scaler = MinMaxScaler(feature_range=(0, 1))
                     scaled_train = scaler.fit_transform(np.array(train).reshape(-1, 1))
                     scaled_test = scaler.transform(np.array(test).reshape(-1, 1))
 
-                    X_train, y_train = create_sequences(scaled_train, time_step)
-                    X_test, y_test = create_sequences(scaled_test, time_step)
+                    X_train, y_train = create_sequences(scaled_train, window_step)
+                    X_test, y_test = create_sequences(scaled_test, window_step)
                     
                     # Reshape input to be [samples, time steps, features]
                     X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
                     X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-                    regressor.add(LSTM(50, return_sequences=True, input_shape=(time_step, 1)))
+                    regressor.add(LSTM(50, return_sequences=True, input_shape=(window_step, 1)))
                     regressor.add(LSTM(50, return_sequences=False))
                     regressor.add(Dense(25))
                     regressor.add(Dense(1))
-                    regressor.compile(optimizer='adam', loss='mean_squared_error')
-                    
-                regressor.fit(X_train, y_train)
-                accuracy, roc_auc, fpr, tpr, thresholds = evaluate_model(regressor, X_train, y_train)
-                #print(regressor, accuracy, roc_auc)
-                if accuracy > max_accuracy:
-                    max_accuracy = accuracy
-                    #min_auc = roc_auc
+                    regressor.compile(optimizer='adam', loss='mean_absolute_error')
+
+                elif "randomForestRegressor" in regressor_string:
+                    regressor = RandomForestRegressor()
+                elif "LinearRegression" in regressor_string:
+                    regressor = LinearRegression()
+                elif "SVR" in regressor_string:
+                    regressor = SVR()
+                elif "GradientBoostingRegressor" in regressor_string:
+                    regressor = GradientBoostingRegressor()
+                elif "DecisionTreeRegressor" in regressor_string:
+                    regressor = DecisionTreeRegressor()
+                elif "AdaBoostRegressor" in regressor_string:
+                    regressor = AdaBoostRegressor()
+                elif "ExtraTreesRegressor" in regressor_string:
+                    regressor = ExtraTreesRegressor()
+                elif "KNeighborsRegressor" in regressor_string:
+                    regressor = KNeighborsRegressor()
+
+                mse, mae = evaluate_model(regressor, X_train, y_train)
+
+                #print(regressor, mse, mae)
+                #time.sleep(1)
+                if mse < min_mse:
+                    min_mae = mae
+                    min_mse = mse
                     best_regressor = regressor
-                    best_time_step = time_step
-                    """
-                    # Make predictions
-                    train_predict = regressor.predict(X_train)
-                    test_predict = regressor.predict(X_test)
+                    best_window_step = window_step
 
-                    # Plot the results
-                    train_plot = np.empty_like(X, dtype=float)
-                    train_plot[:] = np.nan
+        print("couple: ", (n,m), " step: ", prediction_step, " Best regressor: ", best_regressor, " window step: ", best_window_step, " MAE: ", min_mae, " MSE: ", min_mse)
+    
+        window_step = best_window_step
+        regressor_string = str(best_regressor)
+        if 'Sequential' in regressor_string: # LSTM
+            regressor = Sequential()
+            # Normalize data
+            scaler = MinMaxScaler(feature_range=(0, 1))
+            scaled_train = scaler.fit_transform(np.array(train).reshape(-1, 1))
+            scaled_test = scaler.transform(np.array(test).reshape(-1, 1))
 
-                    test_plot = np.empty_like(X, dtype=float)
-                    test_plot[:] = np.nan
-                    if 'Sequential' in str(regressor): # LSTM
-                        train_predict = scaler.inverse_transform(train_predict)
-                        test_predict = scaler.inverse_transform(test_predict)
+            X_train, y_train = create_sequences(scaled_train, window_step)
+            X_test, y_test = create_sequences(scaled_test, window_step)
+                    
+            # Reshape input to be [samples, time steps, features]
+            X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
+            X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
+            regressor.add(LSTM(50, return_sequences=True, input_shape=(window_step, 1)))
+            regressor.add(LSTM(50, return_sequences=False))
+            regressor.add(Dense(25))
+            regressor.add(Dense(1))
+            regressor.compile(optimizer='adam', loss='mean_absolute_error')
+        elif "randomForestRegressor" in regressor_string:
+            regressor = RandomForestRegressor()
+        elif "LinearRegression" in regressor_string:
+            regressor = LinearRegression()
+        elif "SVR" in regressor_string:
+            regressor = SVR()
+        elif "GradientBoostingRegressor" in regressor_string:
+            regressor = GradientBoostingRegressor()
+        elif "DecisionTreeRegressor" in regressor_string:
+            regressor = DecisionTreeRegressor()
+        elif "AdaBoostRegressor" in regressor_string:
+            regressor = AdaBoostRegressor()
+        elif "ExtraTreesRegressor" in regressor_string:
+            regressor = ExtraTreesRegressor()
+        elif "KNeighborsRegressor" in regressor_string:
+            regressor = KNeighborsRegressor()
 
-                        train_plot[time_step:len(train_predict) + time_step] = train_predict[:, 0]
-                        test_plot[len(train_predict) + (time_step * 2):len(X)] = test_predict[:, 0]
-                    else:
-                        train_plot[time_step:len(train_predict) + time_step] = train_predict
-                        test_plot[len(train_predict) + (time_step * 2):len(X)] = test_predict
-                    """
+        X_train, y_train = create_sequences(train, window_step)
+        #print("train sequence: ", X_train, y_train)
+        #print("test sequence: ", X_test, y_test)
+        #time.sleep(1)
+        regressor.fit(X_train, y_train)
 
-        #accuracy, roc_auc, fpr, tpr, thresholds = evaluate_model(best_regressor, X_test, y_test)
-        true_positive = 0
-        true_negative = 0
-        false_positive = 0
-        false_negative = 0
+        test = train[-window_step:] + test
+        #print("new test: ", test)
+        #time.sleep(2)
+        new_test = [v for v in test]
+        inputs = []
         index = 0
-        #print("Best regressor: ", best_regressor, " with accuracy (train): ", accuracy, " and learning step: ", best_time_step)
-        
-        for _ in range(len(test)//steps):
+        predictions = []
+
+        while index < len(test):
+            new_test = [v for v in test]
             try:
-                model = best_regressor
-                #model.initialize_approximate_diffuse() # this line is added to avoir the LU decomposition error
-                X_train, y_train = create_sequences(history, best_time_step)
-                X_test, y_test = create_sequences(test, best_time_step)
-                
-                model_fit = model.fit(X_train, y_train)
-                if 'Sequential' in str(regressor): # LSTM
-                    forecast = model.predict(X_test)[:steps]
-                    #print(forecast)
-                else:
-                    forecast = model_fit.predict(X_test)[:steps]
+                for i in range(index, index+prediction_step):
+                    input_window = new_test[i:window_step+i]
+                    #print("input window: ", input_window)
+                    #time.sleep(1)
+                    reshaped_input_window = np.array(input_window).reshape(1, -1)
+                    #print("reshaped input window: ", reshaped_input_window)
+                    inputs.append(reshaped_input_window)
+                    # Predict the next value
+                    predicted_value = regressor.predict(reshaped_input_window)
+                    #print("predicted value: ", predicted_value)
+                    predictions.append(predicted_value[0])
+                        
+                    # Replace the element in the TestSet with the predicted value
+                    new_test[window_step+i] = predicted_value[0]
+                    i = i + 1
+                    #time.sleep(2)
 
-                #print("forecast: ", forecast)
-                #output = model_fit.predict(len(history), len(history)+steps, dynamic=True)
-                #time.sleep(2)
-
-                for t in range(index, index + steps):
-                    obs = test[t]
-                    history.append(obs)
-                    yhat = forecast[t-index]
-
-                    if yhat < 0:
-                        yhat = 0
-                    elif yhat > 50:
-                        yhat = 50
-
-                    if yhat <= SLA and obs <= SLA:
-                        true_positive = true_positive + 1
-                    elif yhat >= SLA and obs <= SLA:
-                        false_negative = false_negative + 1
-                    elif yhat <= SLA and obs >= SLA:
-                        false_positive = false_positive + 1
-                    elif yhat >= SLA and obs >= SLA:
-                        true_negative = true_negative + 1
-                    if 'Sequential' in str(regressor): # LSTM
-                        predictions.append(str(yhat[0]))
-                    else:
-                        predictions.append(yhat)
-                    #print(key, "predicted=%f, expected=%f" % (yhat, obs))
-
-                index = index + steps
+                #print("test: ", test, index, window_step)
+                refit_data = test[index:index+window_step+prediction_step]
+                #print("refit data: ", refit_data)
+                            
+                # Prepare data for refitting
+                X_train, y_train = create_sequences(refit_data, window_step)
+                #print("Refit with: X train: ", X_train, "y train: ", y_train)
+                #time.sleep(1)
+                index = index + prediction_step
+                        
+                # Refit the model
+                regressor.fit(X_train, y_train)
     
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                print("Exception occured", e)
-                pass
+                #print("Exception occured", e, " Index: ", index, len(test))
+                break
 
-        result[key] = {"regressor": str(best_regressor), "prediction": predictions, "true_positive": true_positive, "false_positive": false_positive, "true_negative": true_negative, "false_negative": false_negative}
-        accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-        #print("Accuracy (test): ", accuracy)
-        results.append(result)           
-        
-        """
+        #print(test[-len(predictions):])
+        #print(predictions)
+        mse = mean_squared_error(test[-len(predictions):], predictions)
+        mae = mean_absolute_error(test[-len(predictions):], predictions)
+        result[key] = {"regressor": str(best_regressor), "window_step": best_window_step, "MAE": mae, "MSE": mse, "predictions": predictions}
+        print("prediction step: ", prediction_step, ", mse: ", mse, ", mae: ", mae)
+        mae_list.append(mae)
+        mse_list.append(mse)
         #time.sleep(1)
-        regressor = best_regressor
-        #print(X, train_plot)
-        plt.plot(X, label='Original Data')
-        plt.plot(train_plot, label='Training Prediction')
-        plt.plot(test_plot, label='Testing Prediction of model: '+str(regressor))
-        plt.legend()
-        plt.show()
-        """
-            
-        #print("False Positive: ", false_positive, " False Negative: ", false_negative, " True Positive: ", true_positive, " True Negative: ", true_negative)
-
-        # Print the evaluation metrics
-        #print("Mean Absolute Error (MAE):", mae)
-        #print("Mean Squared Error (MSE):", mse)
-        #print("R-squared (R²):", r_squared)
-        #print("Root Mean Squared Error (RMSE):", rmse)
-
-        """
-        fig = plt.figure(1)
-        #fig.tight_layout(pad=0.5)
-        fig.subplots_adjust(hspace=0.5, wspace=0.5)
-
-        #print (k, Position[k])
-        ax = fig.add_subplot(4,4,Position[k])
-        ax.set_title(key)
-
-        size_simu = int(len(data_simu_values) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-        train_simu, test_simu = data_simu_values[0:size_simu], data_simu_values[size_simu:len(data_simu_values)] 
-        train_simu_pdr, test_simu_pdr = data_simu_pdr_values[0:size_simu], data_simu_pdr_values[size_simu:len(data_simu_pdr_values)]
-
-        # Initialize lists to hold the legend handles and labels
-        handles = []
-        labels = []
-
-        # Loop over your subplots and collect handles and labels
-        line1, = ax.plot(test, label='experiments') 
-        line2, = ax.plot(test_simu, label='simulation')  
-        line3, = ax.plot(test_simu_pdr, label='simulation_pdr')
-        line4, = ax.plot(predictions, label='predictions')
-
-        # Collect the handles and labels
-        if k == 0:  # Collect only once, to avoid duplicates
-            handles.extend([line1, line2, line3, line4])
-            labels.extend([line1.get_label(), line2.get_label(), line3.get_label(), line4.get_label()])
-
-        fig.legend(handles, labels, loc='upper center')
-        """
-    elem [steps] = {"results": results, "time_step": best_time_step}
+        results.append(result)
+        
+    elem [prediction_step] = {"results": results, "window_step": best_window_step}
     elems.append(elem)    
             
-    #print('Mean Absolute Error (MAE): ', mae_list, np.mean(mae_list))
-    #print('Mean Squared Error (MSE): ', mse_list, np.mean(mse_list))
-    #print('R-squared (R²): ', r_squared_list, np.mean(r_squared_list))
-    #print('Root Mean Squared Error (RMSE): ', rmse_list, np.mean(rmse_list))
-    #print("True Positive: ", true_positive, " False Positive: ", false_positive, " True Negative: ", true_negative, " False Negative: ", false_negative)
-    #print("====================================")
-    #plt.title("Step: "+str(steps))
-    #plt.show()
+    print('Mean Absolute Error (MAE) for step: ', str(prediction_step), ": ", np.mean(mae_list))
+    print('Mean Squared Error (MSE): ', np.mean(mse_list))
 
 filename = sys.argv[1].split(".")[0]
-#print(elems)
+print(elems)
 #print(filename)
 with open('../data/'+filename+'.json', 'a') as file:
-    json.dump(elems, file) 
+    json.dump(elems, file)

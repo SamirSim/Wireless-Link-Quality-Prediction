@@ -4,10 +4,11 @@ import pandas as pd # type: ignore
 import json
 import time
 from sklearn.metrics import roc_curve, auc # type: ignore
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
 import numpy as np # type: ignore
 from scipy.special import softmax # type: ignore
 
-threshold = 35
+threshold = 40
 SLA = threshold
 
 MEAN = False
@@ -183,16 +184,22 @@ else:
     
     # Parse the data from the file
     result = []
-    filenames = ['../data/result-regression-1.json', '../data/result-regression-2.json', '../data/result-regression-3.json', '../data/result-regression-4.json']
+    #filenames = ['../data/result-regression-1.json', '../data/result-regression-2.json', '../data/result-regression-3.json', '../data/result-regression-4.json']
+    """
+    filenames = ['../data/regression-1.json', '../data/regression-2.json', '../data/regression-3.json', '../data/regression-4.json']
     for filename in filenames:
         with open(filename, 'r') as file:
             series_list = json.load(file)
             result.extend(series_list)
-
+    """
     #with open('../data/result-complete-regression.json', 'w') as file:
     #    json.dump(result, file)
     # Ensure 'Step' is treated as a categorical variable
     #print(result)
+
+    filename = '../data/results-regression-2.json'
+    with open(filename, 'r') as file:
+        result = json.load(file)
 
     accuracy = 0
     recall = 0
@@ -221,27 +228,30 @@ else:
                         for key_3, value_3 in elem.items():
                             #print(key_3, value_3["true_positive"], key)
                             step = key
+                            data_ = data_expe[key_3]
+                            size = int(len(data) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+                            test = data_[size:len(data_)]
 
-                            y_pred = value_3["prediction"]
-                            y = data_expe[key_3]
+                            y_pred = value_3["predictions"]
+                            test = test[:len(y_pred)]
 
-                            print(key_3, y_pred, y)
-
+                            #print(key_3, y_pred, test, len(test))
+                            """
                             true_positive = 0
                             true_negative = 0
                             false_positive = 0
                             false_negative = 0
 
                             for i in range(len(y_pred)):
-                                if y[i] <= SLA and y_pred[i] <= SLA:
+                                if test[i] <= SLA and y_pred[i] <= SLA:
                                     true_positive += 1
-                                elif y[i] >= SLA and y_pred[i] >= SLA:
+                                elif test[i] >= SLA and y_pred[i] >= SLA:
                                     true_negative += 1
-                                elif y[i] > SLA and y_pred[i] < SLA:
+                                elif test[i] > SLA and y_pred[i] < SLA:
                                     false_positive += 1
                                     #print("here, ", i, y[i], y_pred[i])
                                     #time.sleep(1)
-                                elif y[i] < SLA and y_pred[i] > SLA:
+                                elif test[i] < SLA and y_pred[i] > SLA:
                                     false_negative += 1
 
                             accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_negative + false_positive)
@@ -256,7 +266,17 @@ else:
                                     specificity = 0
                                 if (true_positive + false_positive) == 0:
                                     precision = 0
-
+                            
+                            mae = 0
+                            mae = mean_absolute_error(test, y_pred)
+                            mse = mean_squared_error(test, y_pred)
+                            """
+                            mae = value_3["MAE"]
+                            mse = value_3["MSE"]
+                            print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+                            if mse > 300:
+                                print("HERE MAE: ", mae, " MSE: ", mse, " step: ", step)
+                                time.sleep(5)
                             """
                             accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
                             recall = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_negative"])
@@ -272,29 +292,31 @@ else:
                                 "Accuracy": float(accuracy),
                                 "Recall": float(recall),
                                 "Specificity": float(specificity),
-                                "Precision": float(precision)
+                                "Precision": float(precision),
+                                "mae": mae,
+                                "mse": mse
                             })
 
-                            predictions = value_3["prediction"][:len(data_expe[key_3])]
+                            #predictions = value_3["predictions"][:len(data_expe[key_3])]
 
-                            size = int(len(data_expe[key_3]) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+                            #size = int(len(data_expe[key_3]) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
 
                             # Convert ground truth values to binary classes based on the threshold
-                            y_true = np.array([1 if val >= threshold else 0 for val in data_expe[key_3][size:len(data_expe[key_3])]])
+                            #y_true = np.array([1 if val >= threshold else 0 for val in data_expe[key_3][size:len(data_expe[key_3])]])
 
                             #print("y_true: ", y_true, "predictions: ", predictions)
                             #time.sleep(1)
                             # Use predicted values as scores
-                            y_scores = np.array(predictions)
+                            #y_scores = np.array(predictions)
 
-                            all_ground_truths.extend(y_true)
-                            all_predictions.extend(y_scores)
+                            #all_ground_truths.extend(y_true)
+                            #all_predictions.extend(y_scores)
                 except Exception as e:
                     print("Exception: ", e)
-                    print(all_predictions)
+                    #print(all_predictions)
                     pass
                         # Convert lists to numpy arrays
-                        
+        """
         all_ground_truths = np.array(all_ground_truths[:len(all_predictions)])
         all_predictions = np.array(all_predictions)
 
@@ -330,20 +352,33 @@ else:
     plt.legend(loc="lower right")
     plt.show()
         
-
+    """
+    
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by="Step")
+    print(data)
     mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
     print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
     print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
     print("Mean Recall: ", df_sorted["Recall"].mean())
     print("Mean Specificity: ", df_sorted["Specificity"].mean())
     print("Mean Precision: ", df_sorted["Precision"].mean())
+    print("Mean MAE: ", df_sorted["mae"].mean())
 
     print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
 
+    # MAE
+    #plt.subplot(2, 2, 1)
+    sns.violinplot(x="Step", y="mse", data=df_sorted)
+    plt.title('MSE')
+    plt.show()
+
+    sns.violinplot(x="Step", y="mae", data=df_sorted)
+    plt.title('MAE')
+    plt.show()
+    
     # Accuracy
     plt.subplot(2, 2, 1)
     sns.violinplot(x="Step", y="Accuracy", data=df_sorted)
@@ -361,6 +396,6 @@ else:
     plt.subplot(2, 2, 4)
     sns.violinplot(x="Step", y="Precision", data=df)
     plt.title('Precision')
-
+  
     plt.tight_layout()
     plt.show()
