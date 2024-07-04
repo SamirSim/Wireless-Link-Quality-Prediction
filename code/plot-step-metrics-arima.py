@@ -3,7 +3,7 @@ import seaborn as sns
 import pandas as pd
 import json
 import time
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, mean_squared_error, mean_absolute_error
 import numpy as np
 from scipy.special import softmax
 
@@ -189,7 +189,7 @@ else:
     #        series_list = json.load(file)
     #        result.extend(series_list)
 
-    with open('../data/result-complete-arima.json', 'r') as file:
+    with open('../data/results-arima.json', 'r') as file:
         result = json.load(file)
     #with open('../data/result-complete.json', 'w') as file:
     #    json.dump(result, file)
@@ -219,14 +219,14 @@ else:
                 print(key_2, value_2)
                 for elem in value_2:
                     for key_3, value_3 in elem.items():
-                        print(key_3, value_3["true_positive"], key)
+                        #print(key_3, value_3["true_positive"], key)
                         step = key
 
                         y_pred = value_3["prediction"]
                         y = data_expe[key_3]
 
                         print(key_3, y_pred, y)
-
+                        """
                         true_positive = 0
                         true_negative = 0
                         false_positive = 0
@@ -258,6 +258,7 @@ else:
                                 precision = 0
 
                         """
+                        """
                         accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
                         recall = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_negative"])
                         try:
@@ -266,15 +267,29 @@ else:
                         except ZeroDivisionError:
                             specificity = 0
                             precision = 0
+                        
                         """
+
+                        mae = value_3["mae"]
+                        mse = value_3["mse"]
+                        print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+
+                        if mse > 300:
+                            print("HERE ", key_3, value_3["prediction"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["prediction"])], value_3["prediction"]))
+                            #mae = None
+                            mse = None
+                            #time.sleep(2)
+
                         data.append({
                             "Step": int(step),
                             "Accuracy": float(accuracy),
                             "Recall": float(recall),
                             "Specificity": float(specificity),
-                            "Precision": float(precision)
+                            "Precision": float(precision),
+                            "mae": mae,
+                            "mse": mse
                         })
-
+                        """
                         predictions = value_3["prediction"][:len(data_expe[key_3])]
 
                         size = int(len(data_expe[key_3]) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
@@ -289,9 +304,9 @@ else:
 
                         all_ground_truths.extend(y_true)
                         all_predictions.extend(y_scores)
-
+                        """
                         # Convert lists to numpy arrays
-                        
+        """    
         all_ground_truths = np.array(all_ground_truths[:len(all_predictions)])
         all_predictions = np.array(all_predictions)
 
@@ -325,20 +340,29 @@ else:
     plt.title('Receiver Operating Characteristic (ROC)')
     plt.legend(loc="lower right")
     plt.show()
-        
+    """
 
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by="Step")
     #mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
-    #print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
+    #print(len(df_sorted[df_sorted["Step"] == 10]["Accuracy"]))
     print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
     print("Mean Recall: ", df_sorted["Recall"].mean())
     print("Mean Specificity: ", df_sorted["Specificity"].mean())
     print("Mean Precision: ", df_sorted["Precision"].mean())
+    print("Mean MAE: ", df_sorted["mae"].mean())
 
     print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
+
+    sns.violinplot(x="Step", y="mse", data=df_sorted)
+    plt.title('MSE for ARIMA')
+    plt.show()
+
+    sns.violinplot(x="Step", y="mae", data=df_sorted)
+    plt.title('MAE for ARIMA')
+    plt.show()
 
     # Accuracy
     plt.subplot(2, 2, 1)

@@ -1,10 +1,11 @@
+import matplotlib.pyplot as plt
+import numpy as np
 import sys
 import numpy as np # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 from pandas import read_csv # type: ignore
 import random
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, auc, roc_curve # type: ignore
-from scipy.special import softmax # type: ignore
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score # type: ignore
 from statsmodels.tsa.arima.model import ARIMA # type: ignore
 from math import sqrt
 from pandas import DataFrame # type: ignore
@@ -103,61 +104,42 @@ def evaluate_arima_model(X, arima_order):
     
     model = ARIMA(history, order=arima_order)
     model.initialize_approximate_diffuse()
-    pred = model.fit().predict(start=0, end=len(history)-1)
+    pred = model.fit().predict(start=0, end=len(history)-1, dynamic=False)
             
-    true_positive = 0
-    true_negative = 0
-    false_positive = 0
-    false_negative = 0
-    for i in range(len(history)):
-        if history[i] >= SLA and pred[i] >= SLA:
-            true_positive += 1
-        elif history[i] <= SLA and pred[i] <= SLA:
-            true_negative += 1
-        elif history[i] < SLA and pred[i] > SLA:
-            false_positive += 1
-            #print("here, ", i, history[i], pred[i])
-            #time.sleep(1)
-        elif history[i] > SLA and pred[i] < SLA:
-            false_negative += 1
-            #print("here, ", i, history[i], pred[i])
-            #time.sleep(1)
+    mae = mean_absolute_error(history, pred)
+    mse = mean_squared_error(history, pred)
 
-    y_true = np.array([1 if val >= SLA else 0 for val in pred])
-    y = y_true[:len(pred)]
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-    # Applying softmax along axis 1
-    probabilities = np.array(softmax(pred))
-    #print(probabilities)
+    if np.std(pred) < 0.01: # Penalize the model if the standard deviation of the predictions is too low
+        mse *= 2
 
-    #time.sleep(1)
+    # Normalize the evaluation metrics
+    mae_normalized = mae / (max(history) - min(history))
+    mse_normalized = mse / ((max(history) - min(history)) ** 2)
+    #mape_normalized = mape / 100
 
-    # Compute ROC curve and ROC area
-    fpr, tpr, thresholds = roc_curve(y, probabilities)
-    roc_auc = auc(fpr, tpr)
+    # Calculate the score as the sum of normalized metrics
+    score = mae_normalized + mse_normalized # + mape_normalized
 
-    return accuracy, roc_auc, fpr, tpr, thresholds
+    #print(arima_order, score)
+    return score
 
 def optimize_model(dataset, p_values, d_values, q_values):
     # Find the best configuration (p,d,q) for ARIMA model using grid search
-    best_cfg = None
-    max_auc = 0
-    max_accuracy = 0
+    best_score, best_cfg = float("inf"), None
     for p in p_values:
         for d in d_values:
             for q in q_values:
                 order = (p,d,q)
                 try:
-                    accuracy, roc_auc, fpr, tpr, thresholds = evaluate_arima_model(dataset, order)
-                    #print("order: ", (p, d, q), " and AUC: ", roc_auc, " and accuracy: ", accuracy)
+                    score = evaluate_arima_model(dataset, order)
                     #print("here, ", score, best_score)
-                    if accuracy > max_accuracy:
-                        max_accuracy, best_cfg = accuracy, order
+                    if score < best_score:
+                        best_score, best_cfg = score, order
                     #print('ARIMA%s MSE=%.3f' % (order,score))
                 except:
-                    exit(1)
+                    continue
     #print('Best ARIMA%s Score=%.3f' % (best_cfg, best_score))
-    return best_cfg, max_auc, max_accuracy
+    return best_cfg
 
 def get_mean_pdr(data):
     i = 0
@@ -351,7 +333,11 @@ else:
 
     data_simu_pdr = series_list[1]
 
-#couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
+    filename = '../data/results-regression.json'
+    with open(filename, 'r') as file:
+        result = json.load(file)
+        
+    data_regression = result
 
 # Create a list to hold the couples
 couples = []
@@ -364,7 +350,9 @@ for i in range(2, 13):
             # Add the pair (i, j) to the list
             couples.append((i, j))
 Position = range(1,17)
-couples = [(2, 10), (2, 9)]
+
+couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
+
 k = -1
 mean_pdr_total = 0
 
@@ -374,217 +362,74 @@ for key, value in data_expe.items():
     mean_pdr_total = mean_pdr_total + mean_pdr
 #print("Mean PDR of the network: ", mean_pdr_total/len(data_expe))
 
-for n, m in couples:
-    k = k + 1
-    sender = "m3-"+str(n)
-    receiver = "m3-"+str(m)
 
-    key = sender+"_"+receiver
-    data_expe_values = data_expe[key]
-    data_simu_values = data_simu[key]
-    data_simu_pdr_values = data_simu_pdr[key]
+# Assuming data_expe, data_simu, data_simu_pdr, and couples are defined elsewhere in your code
+# couples is a list of tuples where each tuple contains (n, m)
 
-    #print(key, " with data expe size: ", len(data_expe_values))
-    #print(key, " with data simu size: ", len(data_simu_values))
+# Adjust the following constants as needed
+subplots_per_figure = 25
+rows = 5  # Adjust based on the desired subplot arrangement
+cols = 5  # Adjust based on the desired subplot arrangement
 
-    data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
-    data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
 
-    x = np.arange(1, len(data_simu_values) + 1) 
-    y_exp = np.array(data_expe_values)
-    y_sim = np.array(data_simu_values)
-    y_sim_pdr = np.array(data_simu_pdr_values)
-    
-    """
-    fig = plt.figure(1)
+dict = {}
+
+step = 3
+print(len(data_regression))
+for key, value in data_regression[step-1].items():
+    for key_2, value_2 in value.items():
+        try:
+            #print("here ", key_2, value_2)
+            #time.sleep(1)
+            for elem in value_2:
+                for key_3, value_3 in elem.items():
+                    #print(key_3, value_3)
+                    #time.sleep(5)
+                    dict[key_3] = value_3
+                    #data_expe_values.append(value_3)
+        except:
+            print(key, value)
+            time.sleep(1)
+
+for fig_num in range(num_figures):
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 15))
     fig.subplots_adjust(hspace=0.5, wspace=0.5)
+    axes = axes.flatten()  # Flatten the 2D array of axes for easy indexing
 
-    # Initialize lists to hold the legend handles and labels
-    handles = []
-    labels = []
+    for subplot_index in range(subplots_per_figure):
+        index = fig_num * subplots_per_figure + subplot_index
+        if index >= len(couples):
+            break
 
-    
-    # Loop over your subplots and collect handles and labels
-    ax = fig.add_subplot(4, 4, Position[k])  # Adjust according to the number of subplots
-    ax.set_title(key)  # Replace with your actual title or key
-    line1, = ax.plot(y_exp, label='experiments') 
-    line2, = ax.plot(y_sim, label='simulation')  
-    line3, = ax.plot(y_sim_pdr, label='simulation_pdr')
-
-    # Collect the handles and labels
-    if k == 0:  # Collect only once, to avoid duplicates
-        handles.extend([line1, line2, line3])
-        labels.extend([line1.get_label(), line2.get_label(), line3.get_label()])
-
-    fig.legend(handles, labels, loc='upper center')
-    """
-
-#plt.show()
-
-k = -1
-mae_list = []
-mse_list = []
-r_squared_list = []
-rmse_list = []
-
-steps_list = [1, 5, 10, 15]
-elems = []
-for steps in steps_list:
-    results = []
-    elem = {}
-
-    #print("Steps: ", steps)
-
-    for n, m in couples:
-        result = {}
-        k = k + 1
-        #print(k)
-        sender = "m3-"+str(n)
-        receiver = "m3-"+str(m)
-
-        key = sender+"_"+receiver
-
+        n, m = couples[index]
+        sender = "m3-" + str(n)
+        receiver = "m3-" + str(m)
+        key = sender + "_" + receiver
         data_expe_values = data_expe[key]
         data_simu_values = data_simu[key]
         data_simu_pdr_values = data_simu_pdr[key]
-        data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
-        data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
-            
-        # split into train and test sets
-        X = data_expe_values
-        size = int(len(X) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-        train, test = X[0:size], X[size:len(X)]
-        history = [x for x in train]
-        predictions = []
 
-        warnings.filterwarnings("ignore")
-        p_values = range(2, 8)
-        q_values = range(2, 8)
-        d_values = range(2, 7)
-        best_cfg, max_auc, max_accuracy = optimize_model(history, p_values, d_values, q_values) # Find the best configuration (p,d,q) for ARIMA model using grid search
-        #print("Best configuration: ", best_cfg, " for ", key, " with AUC: ", max_auc, " with accuracy: ", max_accuracy)
-        #best_cfg = (5,5,5)
+        data_regression_values = dict[key]["predictions"]
+        data_expe_values = data_expe_values[-len(data_regression_values):]
+        data_simu_values = data_simu_values[-len(data_regression_values):]
+        data_simu_pdr_values = data_simu_pdr_values[-len(data_regression_values):]
+        #
 
-        # walk-forward validation
-        #print(test, size)
+        x = np.arange(1, len(data_simu_values) + 1)
+        y_exp = np.array(data_expe_values)
+        y_sim = np.array(data_simu_values)
+        y_sim_pdr = np.array(data_simu_pdr_values)
 
-        index = 0
-        
-        # Metrics
-        false_negative = 0
-        false_positive = 0
-        true_positive = 0
-        true_negative = 0 
-
-        for _ in range(len(test)//steps):
-            try:
-                model = ARIMA(history, order=best_cfg)
-                model.initialize_approximate_diffuse() # this line is added to avoir the LU decomposition error
-                model_fit = model.fit()
-                forecast = model_fit.forecast(steps)
-
-                #print("forecast: ", forecast)
-                #output = model_fit.predict(len(history), len(history)+steps, dynamic=True)
-                #time.sleep(2)
-
-                for t in range(index, index + steps):
-                    obs = test[t]
-                    history.append(obs)
-                    yhat = forecast[t-index]
-
-                    if yhat < 0:
-                        yhat = 0
-                    elif yhat > 50:
-                        yhat = 50
-
-                    if yhat <= SLA and obs <= SLA:
-                        true_positive = true_positive + 1
-                    elif yhat >= SLA and obs <= SLA:
-                        false_negative = false_negative + 1
-                    elif yhat <= SLA and obs >= SLA:
-                        false_positive = false_positive + 1
-                    elif yhat >= SLA and obs >= SLA:
-                        true_negative = true_negative + 1
-
-                    predictions.append(yhat)
-                    #print(key, "predicted=%f, expected=%f" % (yhat, obs))
-
-                index = index + steps
-    
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print("Exception occured", e)
-                pass
-        result[key] = {"prediction": predictions, "true_positive": true_positive, "false_positive": false_positive, "true_negative": true_negative, "false_negative": false_negative}
-        results.append(result)           
-        
-        #print(result)
-        #print(results)
-        # Calculate evaluation metrics
-        #mae = mean_absolute_error(test[:len(predictions)], predictions)
-        #mse = mean_squared_error(test[:len(predictions)], predictions)
-        #r_squared = r2_score(test[:len(predictions)], predictions)
-        #rmse = np.sqrt(mse)
-
-        #print("False Positive: ", false_positive, " False Negative: ", false_negative, " True Positive: ", true_positive, " True Negative: ", true_negative)
-
-        # Print the evaluation metrics
-        #print("Mean Absolute Error (MAE):", mae)
-        #print("Mean Squared Error (MSE):", mse)
-        #print("R-squared (R²):", r_squared)
-        #print("Root Mean Squared Error (RMSE):", rmse)
-        
-        #mae_list.append(mae)
-        #mse_list.append(mse)
-        #r_squared_list.append(r_squared)
-        #mse_list.append(rmse)
-
-        """
-        fig = plt.figure(1)
-        #fig.tight_layout(pad=0.5)
-        fig.subplots_adjust(hspace=0.5, wspace=0.5)
-
-        #print (k, Position[k])
-        ax = fig.add_subplot(4,4,Position[k])
+        ax = axes[subplot_index]
         ax.set_title(key)
+        ax.plot(y_exp, label='experiments')
+        ax.plot(y_sim, label='simulation')
+        ax.plot(y_sim_pdr, label='simulation_pdr')
+        ax.plot(data_regression_values, label='regression')
 
-        size_simu = int(len(data_simu_values) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-        train_simu, test_simu = data_simu_values[0:size_simu], data_simu_values[size_simu:len(data_simu_values)] 
-        train_simu_pdr, test_simu_pdr = data_simu_pdr_values[0:size_simu], data_simu_pdr_values[size_simu:len(data_simu_pdr_values)]
-        
-        # Initialize lists to hold the legend handles and labels
-        handles = []
-        labels = []
+        if fig_num == 0 and subplot_index == 0:
+            handles, labels = ax.get_legend_handles_labels()
+            fig.legend(handles, labels, loc='upper center')
 
-        # Loop over your subplots and collect handles and labels
-        line1, = ax.plot(test, label='experiments') 
-        line2, = ax.plot(test_simu, label='simulation')  
-        line3, = ax.plot(test_simu_pdr, label='simulation_pdr')
-        line4, = ax.plot(predictions, label='predictions')
-
-        # Collect the handles and labels
-        if k == 0:  # Collect only once, to avoid duplicates
-            handles.extend([line1, line2, line3, line4])
-            labels.extend([line1.get_label(), line2.get_label(), line3.get_label(), line4.get_label()])
-
-        fig.legend(handles, labels, loc='upper center')
-        #plt.show()
-        """
-        
-    elem [steps] = {"results": results}
-    elems.append(elem)    
-            
-    #print('Mean Absolute Error (MAE): ', mae_list, np.mean(mae_list))
-    #print('Mean Squared Error (MSE): ', mse_list, np.mean(mse_list))
-    #print('R-squared (R²): ', r_squared_list, np.mean(r_squared_list))
-    #print('Root Mean Squared Error (RMSE): ', rmse_list, np.mean(rmse_list))
-    #print("True Positive: ", true_positive, " False Positive: ", false_positive, " True Negative: ", true_negative, " False Negative: ", false_negative)
-    #print("====================================")
-    #plt.title("Step: "+str(steps))
-    #plt.show()
-
-filename = sys.argv[1].split(".")[0]
-#print(filename)
-with open('../data/'+filename+'.json', 'a') as file:
-    json.dump(elems, file) 
+    plt.show()

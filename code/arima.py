@@ -92,7 +92,7 @@ def convert_time_to_seconds_milliseconds(time_str):
 
 def evaluate_arima_model(X, arima_order):
     # Evaluate an ARIMA model for a given order (p,d,q)
-    
+
     # prepare training dataset
     train_size = int(len(X) * 0.66)
     train, test = X[0:train_size], X[train_size:]
@@ -103,46 +103,16 @@ def evaluate_arima_model(X, arima_order):
     
     model = ARIMA(history, order=arima_order)
     model.initialize_approximate_diffuse()
-    pred = model.fit().predict(start=0, end=len(history)-1)
-
-    """           
-    true_positive = 0
-    true_negative = 0
-    false_positive = 0
-    false_negative = 0
-    for i in range(len(history)):
-        if history[i] >= SLA and pred[i] >= SLA:
-            true_positive += 1
-        elif history[i] <= SLA and pred[i] <= SLA:
-            true_negative += 1
-        elif history[i] < SLA and pred[i] > SLA:
-            false_positive += 1
-            #print("here, ", i, history[i], pred[i])
-            #time.sleep(1)
-        elif history[i] > SLA and pred[i] < SLA:
-            false_negative += 1
-            #print("here, ", i, history[i], pred[i])
-            #time.sleep(1)
-
-    y_true = np.array([1 if val >= SLA else 0 for val in pred])
-    y = y_true[:len(pred)]
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-    # Applying softmax along axis 1
-    probabilities = np.array(softmax(pred))
-    #print(probabilities)
-
-    #time.sleep(1)
-
-    # Compute ROC curve and ROC area
-    fpr, tpr, thresholds = roc_curve(y, probabilities)
-    roc_auc = auc(fpr, tpr)
-
-    return accuracy, roc_auc, fpr, tpr, thresholds
-    """ 
-    #print(y, y_pred)
+    pred = model.fit().predict(start=1, end=len(history))
     
     mse = mean_squared_error(history, pred)
     mae = mean_absolute_error(history, pred)
+
+    #print('ARIMA%s MSE=%.3f MAE=%.3f' % (arima_order, mse, mae))
+    #plt.plot(history)
+    #plt.plot(pred, color='red')
+    #plt.show()
+    
     return mse, mae
 
 def optimize_model(dataset, p_values, d_values, q_values):
@@ -374,7 +344,7 @@ for i in range(2, 13):
             # Add the pair (i, j) to the list
             couples.append((i, j))
 Position = range(1,17)
-couples = [(2, 10), (2, 9)]
+#couples = [(2, 10), (2, 9)]
 k = -1
 mean_pdr_total = 0
 
@@ -404,32 +374,6 @@ for n, m in couples:
     y_exp = np.array(data_expe_values)
     y_sim = np.array(data_simu_values)
     y_sim_pdr = np.array(data_simu_pdr_values)
-    
-    """
-    fig = plt.figure(1)
-    fig.subplots_adjust(hspace=0.5, wspace=0.5)
-
-    # Initialize lists to hold the legend handles and labels
-    handles = []
-    labels = []
-
-    
-    # Loop over your subplots and collect handles and labels
-    ax = fig.add_subplot(4, 4, Position[k])  # Adjust according to the number of subplots
-    ax.set_title(key)  # Replace with your actual title or key
-    line1, = ax.plot(y_exp, label='experiments') 
-    line2, = ax.plot(y_sim, label='simulation')  
-    line3, = ax.plot(y_sim_pdr, label='simulation_pdr')
-
-    # Collect the handles and labels
-    if k == 0:  # Collect only once, to avoid duplicates
-        handles.extend([line1, line2, line3])
-        labels.extend([line1.get_label(), line2.get_label(), line3.get_label()])
-
-    fig.legend(handles, labels, loc='upper center')
-    """
-
-#plt.show()
 
 k = -1
 mae_list = []
@@ -437,7 +381,7 @@ mse_list = []
 r_squared_list = []
 rmse_list = []
 
-steps_list = [1, 5, 10, 15]
+steps_list = [1, 2, 3, 5, 7, 10, 15, 20]
 elems = []
 for steps in steps_list:
     results = []
@@ -475,9 +419,6 @@ for steps in steps_list:
         print("Best configuration: ", best_cfg, " for ", key, " with MSE: ", min_mse, " with accuracy: ", max_accuracy)
         #best_cfg = (5,5,5)
 
-        # walk-forward validation
-        #print(test, size)
-
         index = 0
         
         # Metrics
@@ -492,10 +433,6 @@ for steps in steps_list:
                 model.initialize_approximate_diffuse() # this line is added to avoir the LU decomposition error
                 model_fit = model.fit()
                 forecast = model_fit.forecast(steps)
-
-                #print("forecast: ", forecast)
-                #output = model_fit.predict(len(history), len(history)+steps, dynamic=True)
-                #time.sleep(2)
 
                 for t in range(index, index + steps):
                     obs = test[t]
@@ -526,77 +463,15 @@ for steps in steps_list:
             except Exception as e:
                 print("Exception occured", e)
                 pass
-        result[key] = {"prediction": predictions, "true_positive": true_positive, "false_positive": false_positive, "true_negative": true_negative, "false_negative": false_negative}
         mae = mean_absolute_error(predictions, test[:len(predictions)])
         mse = mean_squared_error(predictions, test[:len(predictions)])
+        result[key] = {"prediction": predictions, "mse": mse, "mae": mae, "configuration": best_cfg}
         print("mse (test): ", mse, " mae (test): ", mae)
         results.append(result)           
-        
-        #print(result)
-        #print(results)
-        # Calculate evaluation metrics
-        #mae = mean_absolute_error(test[:len(predictions)], predictions)
-        #mse = mean_squared_error(test[:len(predictions)], predictions)
-        #r_squared = r2_score(test[:len(predictions)], predictions)
-        #rmse = np.sqrt(mse)
-
-        #print("False Positive: ", false_positive, " False Negative: ", false_negative, " True Positive: ", true_positive, " True Negative: ", true_negative)
-
-        # Print the evaluation metrics
-        #print("Mean Absolute Error (MAE):", mae)
-        #print("Mean Squared Error (MSE):", mse)
-        #print("R-squared (R²):", r_squared)
-        #print("Root Mean Squared Error (RMSE):", rmse)
-        
-        #mae_list.append(mae)
-        #mse_list.append(mse)
-        #r_squared_list.append(r_squared)
-        #mse_list.append(rmse)
-
-        """
-        fig = plt.figure(1)
-        #fig.tight_layout(pad=0.5)
-        fig.subplots_adjust(hspace=0.5, wspace=0.5)
-
-        #print (k, Position[k])
-        ax = fig.add_subplot(4,4,Position[k])
-        ax.set_title(key)
-
-        size_simu = int(len(data_simu_values) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-        train_simu, test_simu = data_simu_values[0:size_simu], data_simu_values[size_simu:len(data_simu_values)] 
-        train_simu_pdr, test_simu_pdr = data_simu_pdr_values[0:size_simu], data_simu_pdr_values[size_simu:len(data_simu_pdr_values)]
-        
-        # Initialize lists to hold the legend handles and labels
-        handles = []
-        labels = []
-
-        # Loop over your subplots and collect handles and labels
-        line1, = ax.plot(test, label='experiments') 
-        line2, = ax.plot(test_simu, label='simulation')  
-        line3, = ax.plot(test_simu_pdr, label='simulation_pdr')
-        line4, = ax.plot(predictions, label='predictions')
-
-        # Collect the handles and labels
-        if k == 0:  # Collect only once, to avoid duplicates
-            handles.extend([line1, line2, line3, line4])
-            labels.extend([line1.get_label(), line2.get_label(), line3.get_label(), line4.get_label()])
-
-        fig.legend(handles, labels, loc='upper center')
-        #plt.show()
-        """
         
     elem [steps] = {"results": results}
     elems.append(elem)    
             
-    #print('Mean Absolute Error (MAE): ', mae_list, np.mean(mae_list))
-    #print('Mean Squared Error (MSE): ', mse_list, np.mean(mse_list))
-    #print('R-squared (R²): ', r_squared_list, np.mean(r_squared_list))
-    #print('Root Mean Squared Error (RMSE): ', rmse_list, np.mean(rmse_list))
-    #print("True Positive: ", true_positive, " False Positive: ", false_positive, " True Negative: ", true_negative, " False Negative: ", false_negative)
-    #print("====================================")
-    #plt.title("Step: "+str(steps))
-    #plt.show()
-
 filename = sys.argv[1].split(".")[0]
 #print(filename)
 with open('../data/'+filename+'.json', 'a') as file:

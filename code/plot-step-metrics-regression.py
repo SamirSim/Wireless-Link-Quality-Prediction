@@ -197,7 +197,7 @@ else:
     # Ensure 'Step' is treated as a categorical variable
     #print(result)
 
-    filename = '../data/results-regression-2.json'
+    filename = '../data/results-complete-regression.json'
     with open(filename, 'r') as file:
         result = json.load(file)
 
@@ -275,8 +275,10 @@ else:
                             mse = value_3["MSE"]
                             print("MAE: ", mae, " MSE: ", mse, " step: ", step)
                             if mse > 300:
-                                print("HERE MAE: ", mae, " MSE: ", mse, " step: ", step)
-                                time.sleep(5)
+                                print("HERE ", key_3, value_3["predictions"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["predictions"])], value_3["predictions"]))
+                                #mae = None
+                                mse = None
+                                #time.sleep(2)
                             """
                             accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
                             recall = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_negative"])
@@ -358,6 +360,7 @@ else:
     df_sorted = df.sort_values(by="Step")
     print(data)
     mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
+    #(len(df_sorted[df_sorted["Step"] == 10]["Accuracy"]))
     print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
     print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
     print("Mean Recall: ", df_sorted["Recall"].mean())
@@ -368,15 +371,15 @@ else:
     print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
-
+    
     # MAE
     #plt.subplot(2, 2, 1)
     sns.violinplot(x="Step", y="mse", data=df_sorted)
-    plt.title('MSE')
+    plt.title('MSE for Regression')
     plt.show()
 
     sns.violinplot(x="Step", y="mae", data=df_sorted)
-    plt.title('MAE')
+    plt.title('MAE for Regression')
     plt.show()
     
     # Accuracy
@@ -396,6 +399,6 @@ else:
     plt.subplot(2, 2, 4)
     sns.violinplot(x="Step", y="Precision", data=df)
     plt.title('Precision')
-  
+
     plt.tight_layout()
     plt.show()

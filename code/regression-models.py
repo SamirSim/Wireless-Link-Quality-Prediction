@@ -215,7 +215,8 @@ for prediction_step in steps_list:
                     min_mse = mse
                     best_regressor = regressor
                     best_window_step = window_step
-
+        
+        # The best regressor and window step are found
         print("couple: ", (n,m), " step: ", prediction_step, " Best regressor: ", best_regressor, " window step: ", best_window_step, " MAE: ", min_mae, " MSE: ", min_mse)
     
         window_step = best_window_step
