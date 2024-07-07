@@ -277,7 +277,7 @@ else:
                             if mse > 300:
                                 print("HERE ", key_3, value_3["predictions"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["predictions"])], value_3["predictions"]))
                                 #mae = None
-                                mse = None
+                                #mse = None
                                 #time.sleep(2)
                             """
                             accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
@@ -359,46 +359,26 @@ else:
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by="Step")
     print(data)
-    mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
-    #(len(df_sorted[df_sorted["Step"] == 10]["Accuracy"]))
-    print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
-    print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
-    print("Mean Recall: ", df_sorted["Recall"].mean())
-    print("Mean Specificity: ", df_sorted["Specificity"].mean())
-    print("Mean Precision: ", df_sorted["Precision"].mean())
     print("Mean MAE: ", df_sorted["mae"].mean())
+    print("Mean MSE: ", df_sorted["mse"].mean())
+    
+    print("Number of Step 1 elements: ", len(df_sorted[df_sorted["Step"] == 1]))
+    print("Number of Step 10 elements: ", len(df_sorted[df_sorted["Step"] == 10]["mae"]))
 
+    print(df_sorted)
     print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
+    print(np.array(df_sorted[df_sorted["Step"] == 20]["mse"]), len(df_sorted[df_sorted["Step"] == 20]["mse"]))
     
     # MAE
-    #plt.subplot(2, 2, 1)
-    sns.violinplot(x="Step", y="mse", data=df_sorted)
-    plt.title('MSE for Regression')
-    plt.show()
-
-    sns.violinplot(x="Step", y="mae", data=df_sorted)
-    plt.title('MAE for Regression')
-    plt.show()
-    
-    # Accuracy
-    plt.subplot(2, 2, 1)
-    sns.violinplot(x="Step", y="Accuracy", data=df_sorted)
-    plt.title('Accuracy')
+  
+    plt.subplot(2, 1, 1)
+    sns.violinplot(x="Step", y="mse", data=df_sorted, cut=0)
+    plt.title('Regression')
 
     # Recall
-    plt.subplot(2, 2, 2)
-    sns.violinplot(x="Step", y="Recall", data=df_sorted)
-    plt.title('Recall')
+    plt.subplot(2, 1, 2)
+    sns.violinplot(x="Step", y="mae", data=df_sorted, cut=0)
 
-    plt.subplot(2, 2, 3)
-    sns.violinplot(x="Step", y="Specificity", data=df)
-    plt.title('Specificity')
-
-    plt.subplot(2, 2, 4)
-    sns.violinplot(x="Step", y="Precision", data=df)
-    plt.title('Precision')
-
-    plt.tight_layout()
     plt.show()

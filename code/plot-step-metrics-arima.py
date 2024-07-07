@@ -166,6 +166,8 @@ else:
                     false_negative = int(metrics[5])
                     true_positive = int(metrics[8])
                     true_negative = int(metrics[11])
+                    mae = float(metrics[14])
+                    mse = float(metrics[16])
                     accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
                     recall = true_positive / (true_positive + false_negative)
                     specificity = true_negative / (true_negative + false_positive)
@@ -175,7 +177,7 @@ else:
                         "Accuracy": accuracy,
                         "Recall": recall,
                         "Specificity": specificity,
-                        "Precision": precision
+                        "Precision": precision,
                 })
                     
         return pd.DataFrame(data)
@@ -277,7 +279,7 @@ else:
                         if mse > 300:
                             print("HERE ", key_3, value_3["prediction"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["prediction"])], value_3["prediction"]))
                             #mae = None
-                            mse = None
+                            #mse = None
                             #time.sleep(2)
 
                         data.append({
@@ -344,43 +346,21 @@ else:
 
     df = pd.DataFrame(data)
     df_sorted = df.sort_values(by="Step")
-    #mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
-    #print(len(df_sorted[df_sorted["Step"] == 10]["Accuracy"]))
-    print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
-    print("Mean Recall: ", df_sorted["Recall"].mean())
-    print("Mean Specificity: ", df_sorted["Specificity"].mean())
-    print("Mean Precision: ", df_sorted["Precision"].mean())
+
     print("Mean MAE: ", df_sorted["mae"].mean())
 
     print(df_sorted.head())
     # Create violin plots for accuracy and recall
     plt.figure(figsize=(12, 6))
 
-    sns.violinplot(x="Step", y="mse", data=df_sorted)
-    plt.title('MSE for ARIMA')
-    plt.show()
+    print(np.array(df_sorted[df_sorted["Step"] == 20]["mse"]), len(df_sorted[df_sorted["Step"] == 20]["mse"]))
 
-    sns.violinplot(x="Step", y="mae", data=df_sorted)
-    plt.title('MAE for ARIMA')
-    plt.show()
 
-    # Accuracy
-    plt.subplot(2, 2, 1)
-    sns.violinplot(x="Step", y="Accuracy", data=df_sorted)
-    plt.title('Accuracy')
+    plt.subplot(2, 1, 1)
+    sns.violinplot(x="Step", y="mse", data=df_sorted, cut=0)
+    plt.title('ARIMA')
 
-    # Recall
-    plt.subplot(2, 2, 2)
-    sns.violinplot(x="Step", y="Recall", data=df_sorted)
-    plt.title('Recall')
+    plt.subplot(2, 1, 2)
+    sns.violinplot(x="Step", y="mae", data=df_sorted, cut=0)
 
-    plt.subplot(2, 2, 3)
-    sns.violinplot(x="Step", y="Specificity", data=df)
-    plt.title('Specificity')
-
-    plt.subplot(2, 2, 4)
-    sns.violinplot(x="Step", y="Precision", data=df)
-    plt.title('Precision')
-
-    plt.tight_layout()
     plt.show()

@@ -344,7 +344,7 @@ for i in range(2, 13):
             # Add the pair (i, j) to the list
             couples.append((i, j))
 Position = range(1,17)
-#couples = [(2, 10), (2, 9)]
+couples = [(2, 10), (2, 9)]
 k = -1
 mean_pdr_total = 0
 
@@ -383,6 +383,42 @@ rmse_list = []
 
 steps_list = [1, 2, 3, 5, 7, 10, 15, 20]
 elems = []
+
+
+best_cfgs = {}
+for n, m in couples:
+    result = {}
+    k = k + 1
+    #print(k)
+    sender = "m3-"+str(n)
+    receiver = "m3-"+str(m)
+
+    key = sender+"_"+receiver
+
+    data_expe_values = data_expe[key]
+    data_simu_values = data_simu[key]
+    data_simu_pdr_values = data_simu_pdr[key]
+    data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+    data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+            
+    # split into train and test sets
+    X = data_expe_values
+    size = int(len(X) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+    train, test = X[0:size], X[size:len(X)]
+    history = [x for x in train]
+    predictions = []
+
+    warnings.filterwarnings("ignore")
+    p_values = range(2, 8)
+    q_values = range(2, 8)
+    d_values = range(2, 7)
+        
+    best_cfg, min_mse, max_accuracy = optimize_model(history, p_values, d_values, q_values) # Find the best configuration (p,d,q) for ARIMA model using grid search
+    print("Best configuration: ", best_cfg, " for ", key, " with MSE: ", min_mse, " with accuracy: ", max_accuracy)
+
+    best_cfgs[key] = best_cfg
+
+
 for steps in steps_list:
     results = []
     elem = {}
@@ -411,13 +447,7 @@ for steps in steps_list:
         history = [x for x in train]
         predictions = []
 
-        warnings.filterwarnings("ignore")
-        p_values = range(2, 8)
-        q_values = range(2, 8)
-        d_values = range(2, 7)
-        best_cfg, min_mse, max_accuracy = optimize_model(history, p_values, d_values, q_values) # Find the best configuration (p,d,q) for ARIMA model using grid search
-        print("Best configuration: ", best_cfg, " for ", key, " with MSE: ", min_mse, " with accuracy: ", max_accuracy)
-        #best_cfg = (5,5,5)
+        best_cfg = best_cfgs[key]
 
         index = 0
         
@@ -472,7 +502,7 @@ for steps in steps_list:
     elem [steps] = {"results": results}
     elems.append(elem)    
             
+print(elems)
 filename = sys.argv[1].split(".")[0]
-#print(filename)
 with open('../data/'+filename+'.json', 'a') as file:
     json.dump(elems, file) 
