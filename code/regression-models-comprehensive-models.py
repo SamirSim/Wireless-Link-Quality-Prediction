@@ -126,8 +126,6 @@ for n, m in couples:
     history = [x for x in train]
     predictions = []
 
-        #print(X)
-
     randomForestRegressor = RandomForestRegressor()
     linearRegressor = LinearRegression()
     svr = SVR(kernel='rbf')
@@ -136,13 +134,11 @@ for n, m in couples:
     adaBoostRegressor = AdaBoostRegressor()
     extraTreesRegressor = ExtraTreesRegressor()
     kNeighborsRegressor = KNeighborsRegressor()
-    lstm = Sequential()
 
     regressors = [randomForestRegressor, svr, gradientBoostingRegressor, decisionTreeRegressor, adaBoostRegressor, extraTreesRegressor]
     #regressors = [kNeighborsRegressor] # Seems like that there is a problem with KNeighborsRegressor
-    regressor_strings = [str(regressor) for regressor in regressors]
 
-    #regressors = [lstm]
+    regressor_strings = [str(regressor) for regressor in regressors]
     max_accuracy = 0
     min_auc = 0
     min_mse = float("inf")
@@ -164,28 +160,12 @@ for n, m in couples:
                 return np.array(X), np.array(y)
 
             X_train, y_train = create_sequences(train, window_step)
+
+            #print(X_train[-1], y_train[-1])
+            #time.sleep(10)
             
             regressor = RandomForestRegressor() # Default
-            if 'Sequential' in regressor_string: # LSTM
-                regressor = Sequential()
-                # Normalize data
-                scaler = MinMaxScaler(feature_range=(0, 1))
-                scaled_train = scaler.fit_transform(np.array(train).reshape(-1, 1))
-                scaled_test = scaler.transform(np.array(test).reshape(-1, 1))
-
-                X_train, y_train = create_sequences(scaled_train, window_step)
-                X_test, y_test = create_sequences(scaled_test, window_step)
-                
-                # Reshape input to be [samples, time steps, features]
-                X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-                X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-                regressor.add(LSTM(50, return_sequences=True, input_shape=(window_step, 1)))
-                regressor.add(LSTM(50, return_sequences=False))
-                regressor.add(Dense(25))
-                regressor.add(Dense(1))
-                regressor.compile(optimizer='adam', loss='mean_absolute_error')
-
-            elif "randomForestRegressor" in regressor_string:
+            if "randomForestRegressor" in regressor_string:
                 regressor = RandomForestRegressor()
             elif "LinearRegression" in regressor_string:
                 regressor = LinearRegression()
@@ -253,25 +233,7 @@ for prediction_step in steps_list:
         
             window_step = best_window_step
             regressor_string = str(best_regressor)
-            if 'Sequential' in regressor_string: # LSTM
-                regressor = Sequential()
-                # Normalize data
-                scaler = MinMaxScaler(feature_range=(0, 1))
-                scaled_train = scaler.fit_transform(np.array(train).reshape(-1, 1))
-                scaled_test = scaler.transform(np.array(test).reshape(-1, 1))
-
-                X_train, y_train = create_sequences(scaled_train, window_step)
-                X_test, y_test = create_sequences(scaled_test, window_step)
-                        
-                # Reshape input to be [samples, time steps, features]
-                X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-                X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-                regressor.add(LSTM(50, return_sequences=True, input_shape=(window_step, 1)))
-                regressor.add(LSTM(50, return_sequences=False))
-                regressor.add(Dense(25))
-                regressor.add(Dense(1))
-                regressor.compile(optimizer='adam', loss='mean_absolute_error')
-            elif "randomForestRegressor" in regressor_string:
+            if "randomForestRegressor" in regressor_string:
                 regressor = RandomForestRegressor()
             elif "LinearRegression" in regressor_string:
                 regressor = LinearRegression()
@@ -289,6 +251,7 @@ for prediction_step in steps_list:
                 regressor = KNeighborsRegressor()
 
             X_train, y_train = create_sequences(train, window_step)
+
             regressor.fit(X_train, y_train)
 
             test = train[-window_step:] + test

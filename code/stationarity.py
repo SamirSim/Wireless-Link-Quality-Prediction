@@ -5,8 +5,31 @@ import json
 import time
 from sklearn.metrics import roc_curve, auc # type: ignore
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
+import pmdarima as pm # type: ignore
+from statsmodels.tsa.stattools import adfuller # type: ignore
 import numpy as np # type: ignore
 from scipy.special import softmax # type: ignore
+import sys
+
+def plot_series(series, title="Time Series"):
+    plt.figure(figsize=(10, 6))
+    plt.plot(series)
+    plt.title(title)
+    plt.show()
+
+def is_stationary(time_series, significance_level=0.05):
+    result = adfuller(time_series)
+    p_value = result[1]
+    return p_value < significance_level
+
+def auto_differencing(time_series):
+    # Use pmdarima's ndiffs to find the optimal number of differences
+    d = pm.arima.ndiffs(time_series, test='adf')
+    diff_series = time_series
+    for _ in range(d):
+        diff_series = np.diff(diff_series, n=1)
+
+    return diff_series, d
 
 # ARIMA
 result = []
@@ -20,7 +43,11 @@ data = []
 with open('../data/series_list_customized_p.json', 'r') as file:
     series_list = json.load(file)
 
+link_mse = {"first": [], "second": [], "third": [], "nb_first": 0, "nb_second": 0, "nb_third": 0}
+
 data_expe = series_list[0]
+
+"""
 cpt = 0
 for elem in result:
     # Initialize lists to collect all ground truths and predictions
@@ -28,8 +55,11 @@ for elem in result:
     all_predictions = []
 
     for key, value in elem.items():
+        if int(key) > 1:
+            continue
+        
         for key_2, value_2 in value.items():
-            print(key_2, value_2)
+            #print(key_2, value_2)
             for elem in value_2:
                 for key_3, value_3 in elem.items():
                     #print(key_3, value_3["true_positive"], key)
@@ -40,10 +70,67 @@ for elem in result:
 
                     mae = value_3["mae"]
                     mse = value_3["mse"]
-                    print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+                    #print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+
+                    test_data = y[-len(y_pred):]
+                    # ADF test
+                    result = adfuller(y)
+                    #print('ADF Statistic: %f' % result[0])
+                    #print('p-value: %f' % result[1])
+                    adf_statistic, p_value, _, _, critical_values, _ = result
+
+    
+                    # Check if p-value is less than the significance level
+                    significance_level=0.05
+                    is_stationary_ = p_value < significance_level
+                    #print('Variance: ', np.var(y))
+
+                    
+
+                    if mae < 2:
+                        #print("Link: ", key_3)
+                        link_mse["first"].append(key_3)
+                    elif mae < 5:
+                        link_mse["second"].append(key_3)
+                    else:
+                        link_mse["third"].append(key_3)
+
+                    if mse > 3000000:
+                        print("Link: ", key_3)
+                        print("The time series is ", "stationary" if is_stationary_ else "not stationary")
+                        pred_plot = np.empty_like(y, dtype=float)
+                        pred_plot[:] = np.nan
+                        for i in range(len(y_pred)):
+                            pred_plot[-len(y_pred)+i] = y_pred[i]
+                        print('MSE: ', mse, ' MAE: ', mae)
+                        # Compute variance of the series
+                        print('Variance: ', np.var(y))
+
+                        # Plot the series
+                        plt.figure(figsize=(12, 6))
+                        plt.plot(y, label='True')
+                        plt.plot(pred_plot, label='Predicted')
+                        plt.legend()
+                        plt.title(key_3)
+                        plt.show()
+
+                        time_series_data = np.array(y).cumsum()
+
+                        # Perform auto differencing
+                        diff_series, num_diffs = auto_differencing(time_series_data)
+                        
+                        # Plot the differenced series
+                        plot_series(diff_series, title=f"Differenced Series (d={num_diffs})")
+                        
+                        # Check if the differenced series is stationary
+                        if is_stationary(diff_series):
+                            print(f"The differenced time series is stationary after {num_diffs} differences.")
+                        else:
+                            print(f"The differenced time series is not stationary after {num_diffs} differences.")
 
                     if mse > 300:
-                        print("HERE ", key_3, value_3["prediction"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["prediction"])], value_3["prediction"]))
+                        pass
+                        #print("HERE ", key_3, value_3["prediction"], data_expe[key_3], mean_squared_error(data_expe[key_3][:len(value_3["prediction"])], value_3["prediction"]))
                         #mae = None
                         #mse = None
                         #time.sleep(2)
@@ -53,6 +140,14 @@ for elem in result:
                         "mae": mae,
                         "mse": mse
                     })
+
+link_mse["nb_first"] = len(link_mse["first"])
+link_mse["nb_second"] = len(link_mse["second"])
+link_mse["nb_third"] = len(link_mse["third"])
+
+print("Link MSE: ", link_mse)
+
+time.sleep(5)
 
 df_arima = pd.DataFrame(data)
 df_sorted_arima = df_arima.sort_values(by="Step")
@@ -124,7 +219,6 @@ df_combined = pd.concat([random_forest, svr, gradient_boosting, decision_tree, a
 # Create the violin plot
 sns.violinplot(x="Step", y="mse", hue="Category", density_norm="count", data=df_combined, cut=0, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
 #sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
-#plt.yscale('log')
 
 # Add title and labels
 plt.title('MSE')
@@ -135,7 +229,6 @@ plt.legend(loc='upper right')
 plt.subplot(2, 1, 2)
 sns.violinplot(x="Step", y="mae", hue="Category", density_norm="count", data=df_combined, cut=0, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
 #sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
-#plt.yscale('log')
 
 # Add title and labels
 plt.title('MAE')
@@ -195,6 +288,7 @@ for elem in result:
 
 df_regression = pd.DataFrame(data)
 df_sorted_regression = df_regression.sort_values(by="Step")
+"""
 
 # Adaptive Regression
 filename = '../data/results-regression-comprehensive-models.json'
@@ -202,6 +296,8 @@ with open(filename, 'r') as file:
     result = json.load(file)
 
 data = []
+
+cluster_data = {"1": [], "2": [], "3": [], "5": [], "7": [], "10": [], "15": [], "20": []}
 
 # Load the series_list from the file
 with open('../data/series_list_customized_p.json', 'r') as file:
@@ -226,20 +322,13 @@ for elem in result:
             for key_2, value_2 in value.items():
                 try:
                     for key_3, value_3 in value_2.items():
+                        res = {}
                         final_predictions = []
                         data_expe_values = data_expe[key_3]
                             
                         train_size = int(len(data_expe_values) * 0.66)
                         train, test = data_expe_values[0:train_size], data_expe_values[train_size:]
 
-                        print("train: ", train, train[-1])
-                        print("test: ", test)
-                        #time.sleep(2)
-                        # Add the last element of the training set to the test set
-                        test = np.insert(test, 0, train[-1])
-
-                        print("test: ", test)
-                        #time.sleep(1)
                         index = 0
                         while index <= len(test):
                             min_mse = float('inf')
@@ -249,9 +338,8 @@ for elem in result:
                                 regressor = elem["regressor"]
                                 try:
                                     for i in range(0, step):
-                                        elem_.append(elem["predictions"][index+i]) # Changed here from i+1 to i
-                                        print(regressor, index, test[index+i], elem["predictions"][index+i]) # Changed here from i+1 to i
-                                        #time.sleep(1)
+                                        elem_.append(elem["predictions"][index+i])
+                                        print(regressor, index, test[index+i], elem["predictions"][index+i+1])
                                     mse = mean_squared_error(test[index:index+step], elem_)
                                     
                                     if mse < min_mse:
@@ -271,16 +359,26 @@ for elem in result:
                             regressors_list.append(best_regressor)
 
                             index += step
+
                         print("Final predictions: ", final_predictions)
-                        
                         if step == 1:
                             print("here")
-                            print(len(final_predictions), len(test))
+                            print(test[:len(final_predictions)])
                             print(final_predictions)
-                            print(regressors_list)
                             #time.sleep(5)
                         mse = mean_squared_error(test[:len(final_predictions)], final_predictions)
                         mae = mean_absolute_error(test[:len(final_predictions)], final_predictions)
+
+                        
+                        res[key_3] = {"mse": mse, "mae": mae}
+
+                        if mae < 2:
+                        #print("Link: ", key_3)
+                            link_mse["first"].append(key_3)
+                        elif mae < 5:
+                            link_mse["second"].append(key_3)
+                        else:
+                            link_mse["third"].append(key_3)
 
                         if mse > 100:
                             print("Here MSE too big: MSE: ", mse, " Key: ", key_3, " Step: ", step)
@@ -291,13 +389,14 @@ for elem in result:
                         maes_list.append(mae)
                         print("Final MSE: ", mse, "Final MAE: ", mae)
 
+                        cluster_data[str(step)].append(res)  
                 except Exception as e:
                     print("Exception: ", e)
                     print(step, key_2, key_3)
                     #time.sleep(10)
                     #print(all_predictions)
                     pass
-                        # Convert lists to numpy arrays
+                      # Convert lists to numpy arrays
     print("Step: ", step)
     if step == 3:
         print("here")
@@ -308,64 +407,21 @@ for elem in result:
         data.append({"Step": step, "mse": mse_list[i], "mae": maes_list[i]})
     #time.sleep(2)
 
+link_mse["nb_first"] = len(link_mse["first"])
+link_mse["nb_second"] = len(link_mse["second"])
+link_mse["nb_third"] = len(link_mse["third"])
+
+print("Link MSE: ", link_mse)
+
+filename = "cluster_data.json"
+print(cluster_data)
+#print(filename)
+with open('../data/'+filename+'.json', 'a') as file:
+    json.dump(cluster_data, file)
+
+exit()
 df_adaptive_regression = pd.DataFrame(data)
 df_sorted_adaptive_regression = df_adaptive_regression.sort_values(by="Step")
-
-# RNN
-filename = '../data/rnn.json'
-with open(filename, 'r') as file:
-    result = json.load(file)
-
-data = []
-
-data_expe = series_list[0]
-cpt = 0
-for elem in result:
-    # Initialize lists to collect all ground truths and predictions
-    all_ground_truths = []
-    all_predictions = []
-
-    for key, value in elem.items():
-        print(key)
-        if key == "Time taken":
-            break
-        #time.sleep(2)
-        for key_2, value_2 in value.items():
-            try:
-                print("here ", key_2)
-                #time.sleep(5)
-                for key_3, value_3 in value_2.items():
-                    for elem_ in value_3:
-                        print("monsieur, ", key_3, elem_)
-                        print(key_3, key)
-                        step = key
-                        data_ = data_expe[key_3]
-                        size = int(len(data) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-                        test = data_[size:len(data_)]
-
-                        y_pred = elem_["predictions"]
-                        test = test[:len(y_pred)]
-
-                        #print(key_3, y_pred, test, len(test))
-
-                        mae = elem_["MAE"]
-                        mse = elem_["MSE"]
-                        print("MAE: ", mae, " MSE: ", mse, " step: ", step)
- 
-                        data.append({
-                            "Step": int(step),
-                            "mae": mae,
-                            "mse": mse
-                        })
-
-            except Exception as e:
-                print("Exception: ", e)
-                #print(all_predictions)
-                pass
-                    # Convert lists to numpy arrays
-    
-df_rnn= pd.DataFrame(data)
-df_sorted_rnn = df_rnn.sort_values(by="Step")
 
 # Plotting
 plt.figure(figsize=(12, 6))
@@ -376,14 +432,13 @@ plt.subplot(2, 1, 1)
 df_sorted_adaptive_regression['Category'] = 'Adaptive Regression'
 df_sorted_regression['Category'] = 'Regression'
 df_sorted_arima['Category'] = 'ARIMA'
-df_sorted_rnn['Category'] = 'RNN'
 
 # Concatenate the dataframes
-df_combined = pd.concat([df_sorted_adaptive_regression, df_sorted_regression, df_sorted_rnn])
+df_combined = pd.concat([df_sorted_adaptive_regression, df_sorted_regression])
 
 # Create the violin plot
 #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
-sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green", "RNN": "red"})
+sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green"})
 plt.yscale('log')
 
 # Add title and labels
@@ -394,7 +449,7 @@ plt.legend(loc='upper right')
 
 plt.subplot(2, 1, 2)
 #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
-sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green", "RNN": "red"})
+sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green"})
 plt.yscale('log')
 
 # Add title and labels

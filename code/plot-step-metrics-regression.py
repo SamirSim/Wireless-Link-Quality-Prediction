@@ -197,7 +197,7 @@ else:
     # Ensure 'Step' is treated as a categorical variable
     #print(result)
 
-    filename = '../data/results-complete-regression.json'
+    filename = '../data/results-best-regression.json'
     with open(filename, 'r') as file:
         result = json.load(file)
 

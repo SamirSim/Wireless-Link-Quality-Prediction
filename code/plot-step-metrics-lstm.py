@@ -4,6 +4,7 @@ import pandas as pd # type: ignore
 import json
 import time
 from sklearn.metrics import roc_curve, auc # type: ignore
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
 import numpy as np # type: ignore
 from scipy.special import softmax # type: ignore
 
@@ -149,61 +150,19 @@ if MEAN: # Plot mean values for the metrics
 
     """
 else:
-    # Function to parse the data file
-    def parse_data(file_path):
-        data = []
-        current_step = None
-
-        with open(file_path, 'r') as file:
-            for line in file:
-                line = line.strip()
-                if line.startswith("Step:"):
-                    current_step = int(line.split()[1])
-                    #print(current_step)
-                elif line.startswith("False Positive"):
-                    metrics = line.split()
-                    false_positive = int(metrics[2])
-                    false_negative = int(metrics[5])
-                    true_positive = int(metrics[8])
-                    true_negative = int(metrics[11])
-                    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-                    recall = true_positive / (true_positive + false_negative)
-                    specificity = true_negative / (true_negative + false_positive)
-                    precision = true_positive / (true_positive + false_positive)
-                    data.append({
-                        "Step": current_step,
-                        "Accuracy": accuracy,
-                        "Recall": recall,
-                        "Specificity": specificity,
-                        "Precision": precision
-                })
-                    
-        return pd.DataFrame(data)
-                    
-    
     # Parse the data from the file
     result = []
-    filenames = ['../data/result-lstm-1.json', '../data/result-lstm-2.json', '../data/result-lstm-3.json', '../data/result-lstm-4.json']
-    for filename in filenames:
-        with open(filename, 'r') as file:
-            series_list = json.load(file)
-            result.extend(series_list)
-
-    #with open('../data/result-complete-lstm.json', 'w') as file:
-    #    json.dump(result, file)
-    # Ensure 'Step' is treated as a categorical variable
-    #print(result)
-
-    accuracy = 0
-    recall = 0
-    specificity = 0
-    precision = 0
-
-    data = []
-
+   
     # Load the series_list from the file
     with open('../data/series_list_customized_p.json', 'r') as file:
         series_list = json.load(file)
+
+    # RNN
+    filename = '../data/rnn.json'
+    with open(filename, 'r') as file:
+        result = json.load(file)
+
+    data = []
 
     data_expe = series_list[0]
     cpt = 0
@@ -213,154 +172,193 @@ else:
         all_predictions = []
 
         for key, value in elem.items():
+            print(key)
+            if key == "Time taken":
+                break
+            #time.sleep(2)
             for key_2, value_2 in value.items():
                 try:
-                    #print("here ", key_2, value_2)
-                    #time.sleep(1)
-                    for elem in value_2:
-                        for key_3, value_3 in elem.items():
-                            #print(key_3, value_3["true_positive"], key)
+                    print("here ", key_2)
+                    #time.sleep(5)
+                    for key_3, value_3 in value_2.items():
+                        for elem_ in value_3:
+                            print("monsieur, ", key_3, elem_)
+                            print(key_3, key)
                             step = key
+                            data_ = data_expe[key_3]
+                            size = int(len(data) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+                            test = data_[size:len(data_)]
 
-                            y_pred = [float(val) for val in value_3["prediction"]]
-                            y = data_expe[key_3]
+                            y_pred = elem_["predictions"]
+                            test = test[:len(y_pred)]
 
-                            #print(key_3, y_pred, y)
+                            #print(key_3, y_pred, test, len(test))
 
-                            true_positive = 0
-                            true_negative = 0
-                            false_positive = 0
-                            false_negative = 0
-
-                            for i in range(len(y_pred)):
-                                if y[i] <= SLA and y_pred[i] <= SLA:
-                                    true_positive += 1
-                                elif y[i] >= SLA and y_pred[i] >= SLA:
-                                    true_negative += 1
-                                elif y[i] > SLA and y_pred[i] < SLA:
-                                    false_positive += 1
-                                    #print("here, ", i, y[i], y_pred[i])
-                                    #time.sleep(1)
-                                elif y[i] < SLA and y_pred[i] > SLA:
-                                    false_negative += 1
-
-                            accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_negative + false_positive)
-                            try:
-                                recall = true_positive  / (true_positive + false_negative)
-                                specificity = true_negative / (true_negative + false_positive)
-                                precision = true_positive / (true_positive + false_positive)
-                            except ZeroDivisionError:
-                                if (true_positive + false_negative) == 0:
-                                    recall = 0
-                                if (true_negative + false_positive) == 0:
-                                    specificity = 0
-                                if (true_positive + false_positive) == 0:
-                                    precision = 0
-
-                            """
-                            accuracy = (value_3["true_positive"] + value_3["true_negative"]) / (value_3["true_positive"] + value_3["true_negative"] + value_3["false_positive"] + value_3["false_negative"])
-                            recall = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_negative"])
-                            try:
-                                specificity = value_3["true_negative"] / (value_3["true_negative"] + value_3["false_positive"])
-                                precision = value_3["true_positive"] / (value_3["true_positive"] + value_3["false_positive"])
-                            except ZeroDivisionError:
-                                specificity = 0
-                                precision = 0
-                            """
+                            mae = elem_["MAE"]
+                            mse = elem_["MSE"]
+                            print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+ 
                             data.append({
                                 "Step": int(step),
-                                "Accuracy": float(accuracy),
-                                "Recall": float(recall),
-                                "Specificity": float(specificity),
-                                "Precision": float(precision)
+                                "mae": mae,
+                                "mse": mse
                             })
 
-                            predictions = y_pred[:len(data_expe[key_3])]
-
-                            size = int(len(data_expe[key_3]) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
-
-                            # Convert ground truth values to binary classes based on the threshold
-                            y_true = np.array([1 if val >= threshold else 0 for val in data_expe[key_3][size:len(data_expe[key_3])]])
-
-                            #print("y_true: ", y_true, "predictions: ", predictions)
-                            #time.sleep(1)
-                            # Use predicted values as scores
-                            y_scores = np.array(predictions)
-
-                            all_ground_truths.extend(y_true)
-                            all_predictions.extend(y_scores)
                 except Exception as e:
                     print("Exception: ", e)
-                    print(all_predictions)
+                    #print(all_predictions)
                     pass
                         # Convert lists to numpy arrays
-                        
-        all_ground_truths = np.array(all_ground_truths[:len(all_predictions)])
-        all_predictions = np.array(all_predictions)
-
-        # Applying softmax along axis 1
-        #print(all_predictions)
-        probabilities = np.array(softmax(all_predictions))
-        print(probabilities)
-
-        #time.sleep(1)
-
-        # Compute ROC curve and ROC area
-        fpr, tpr, thresholds = roc_curve(all_ground_truths, probabilities)
-        roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, lw=2, label=f'Step {step}')
-        if cpt == 0:
-            plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-            cpt += 1
-
-        # Print TPR, FPR, and thresholds for reference
-        print(f"False Positive Rate: {fpr}")
-        print(f"True Positive Rate: {tpr}")
-        print(f"Thresholds: {thresholds}")
-
-        # Plot ROC curve
-        
-    #plt.figure()
     
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC)')
-    plt.legend(loc="lower right")
-    plt.show()
-        
+    df_rnn = pd.DataFrame(data)
+    df_sorted_rnn = df_rnn.sort_values(by="Step")
 
-    df = pd.DataFrame(data)
-    df_sorted = df.sort_values(by="Step")
-    mean_accuracy_step1 = df_sorted[df_sorted["Step"] == 1]["Accuracy"].mean()
-    print("Mean Accuracy for Step 1: ", mean_accuracy_step1)
-    print("Mean Accuracy: ", df_sorted["Accuracy"].mean())
-    print("Mean Recall: ", df_sorted["Recall"].mean())
-    print("Mean Specificity: ", df_sorted["Specificity"].mean())
-    print("Mean Precision: ", df_sorted["Precision"].mean())
+    # LSTM
+    filename = '../data/lstm.json'
+    with open(filename, 'r') as file:
+        result = json.load(file)
 
-    print(df_sorted.head())
-    # Create violin plots for accuracy and recall
+    data = []
+
+    data_expe = series_list[0]
+    cpt = 0
+    for elem in result:
+        # Initialize lists to collect all ground truths and predictions
+        all_ground_truths = []
+        all_predictions = []
+
+        for key, value in elem.items():
+            print(key)
+            if key == "Time taken":
+                break
+            #time.sleep(2)
+            for key_2, value_2 in value.items():
+                try:
+                    print("here ", key_2)
+                    #time.sleep(5)
+                    for key_3, value_3 in value_2.items():
+                        for elem_ in value_3:
+                            print("monsieur, ", key_3, elem_)
+                            print(key_3, key)
+                            step = key
+                            data_ = data_expe[key_3]
+                            size = int(len(data) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+                            test = data_[size:len(data_)]
+
+                            y_pred = elem_["predictions"]
+                            test = test[:len(y_pred)]
+
+                            #print(key_3, y_pred, test, len(test))
+
+                            mae = elem_["MAE"]
+                            mse = elem_["MSE"]
+                            print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+ 
+                            data.append({
+                                "Step": int(step),
+                                "mae": mae,
+                                "mse": mse
+                            })
+
+                except Exception as e:
+                    print("Exception: ", e)
+                    #print(all_predictions)
+                    pass
+                        # Convert lists to numpy arrays
+    
+    df_lstm = pd.DataFrame(data)
+    df_sorted_lstm = df_lstm.sort_values(by="Step")
+
+    # GRU
+    filename = '../data/gru.json'
+    with open(filename, 'r') as file:
+        result = json.load(file)
+
+    data = []
+
+    data_expe = series_list[0]
+    cpt = 0
+    for elem in result:
+        # Initialize lists to collect all ground truths and predictions
+        all_ground_truths = []
+        all_predictions = []
+
+        for key, value in elem.items():
+            print(key)
+            if key == "Time taken":
+                break
+            #time.sleep(2)
+            for key_2, value_2 in value.items():
+                try:
+                    print("here ", key_2)
+                    #time.sleep(5)
+                    for key_3, value_3 in value_2.items():
+                        for elem_ in value_3:
+                            print("monsieur, ", key_3, elem_)
+                            print(key_3, key)
+                            step = key
+                            data_ = data_expe[key_3]
+                            size = int(len(data) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+                            test = data_[size:len(data_)]
+
+                            y_pred = elem_["predictions"]
+                            test = test[:len(y_pred)]
+
+                            #print(key_3, y_pred, test, len(test))
+
+                            mae = elem_["MAE"]
+                            mse = elem_["MSE"]
+                            print("MAE: ", mae, " MSE: ", mse, " step: ", step)
+ 
+                            data.append({
+                                "Step": int(step),
+                                "mae": mae,
+                                "mse": mse
+                            })
+
+                except Exception as e:
+                    print("Exception: ", e)
+                    #print(all_predictions)
+                    pass
+                        # Convert lists to numpy arrays
+    
+    df_gru= pd.DataFrame(data)
+    df_sorted_gru = df_gru.sort_values(by="Step")
+
+    # Plotting
     plt.figure(figsize=(12, 6))
 
-    # Accuracy
-    plt.subplot(2, 2, 1)
-    sns.violinplot(x="Step", y="Accuracy", data=df_sorted)
-    plt.title('Accuracy')
+    plt.subplot(2, 1, 1)
+    # Plot the violin plots for each dataset
+    # Add a category column to each dataframe
+    df_sorted_lstm['Category'] = 'LSTM'
+    df_sorted_rnn['Category'] = 'RNN'
+    df_sorted_gru['Category'] = 'GRU'
 
-    # Recall
-    plt.subplot(2, 2, 2)
-    sns.violinplot(x="Step", y="Recall", data=df_sorted)
-    plt.title('Recall')
+    # Concatenate the dataframes
+    df_combined = pd.concat([df_sorted_rnn, df_sorted_lstm, df_sorted_gru])
 
-    plt.subplot(2, 2, 3)
-    sns.violinplot(x="Step", y="Specificity", data=df)
-    plt.title('Specificity')
+    # Create the violin plot
+    #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
+    sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    #plt.yscale('log')
 
-    plt.subplot(2, 2, 4)
-    sns.violinplot(x="Step", y="Precision", data=df)
-    plt.title('Precision')
+    # Add title and labels
+    plt.title('MSE')
+    plt.xlabel('Step')
+    plt.ylabel('MSE')
+    plt.legend(loc='upper right')
+
+    plt.subplot(2, 1, 2)
+    #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
+    sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    #plt.yscale('log')
+
+    # Add title and labels
+    plt.title('MAE')
+    plt.xlabel('Step')
+    plt.ylabel('MAE')
 
     plt.tight_layout()
+
     plt.show()
