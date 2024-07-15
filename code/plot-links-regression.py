@@ -333,12 +333,16 @@ else:
 
     data_simu_pdr = series_list[1]
 
-    filename = '../data/results-regression.json'
-    with open(filename, 'r') as file:
-        result = json.load(file)
-        
-    data_regression = result
+    #filename = '../data/results-regression.json'
+    #with open(filename, 'r') as file:
+    #    result = json.load(file)
 
+    file = '../data/predictions-adaptive-regression.json'
+    with open(file, 'r') as file:
+        result = json.load(file)
+
+    data_regression = result
+        
 # Create a list to hold the couples
 couples = []
 
@@ -351,7 +355,7 @@ for i in range(2, 13):
             couples.append((i, j))
 Position = range(1,17)
 
-couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
+couples = [(2, 10), (2, 9), (7, 9), (6, 10), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (7, 6), (6, 9)]
 
 k = -1
 mean_pdr_total = 0
@@ -367,30 +371,18 @@ for key, value in data_expe.items():
 # couples is a list of tuples where each tuple contains (n, m)
 
 # Adjust the following constants as needed
-subplots_per_figure = 25
-rows = 5  # Adjust based on the desired subplot arrangement
-cols = 5  # Adjust based on the desired subplot arrangement
+subplots_per_figure = 9
+rows = 3  # Adjust based on the desired subplot arrangement
+cols = 3  # Adjust based on the desired subplot arrangement
 
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
 
 dict = {}
 
-step = 3
-print(len(data_regression))
-for key, value in data_regression[step-1].items():
-    for key_2, value_2 in value.items():
-        try:
-            #print("here ", key_2, value_2)
-            #time.sleep(1)
-            for elem in value_2:
-                for key_3, value_3 in elem.items():
-                    #print(key_3, value_3)
-                    #time.sleep(5)
-                    dict[key_3] = value_3
-                    #data_expe_values.append(value_3)
-        except:
-            print(key, value)
-            time.sleep(1)
+step = 1
+for elem in data_regression[str(step)]:
+    for key_2, value_2 in elem.items():
+        dict[key_2] = value_2["predictions"]
 
 for fig_num in range(num_figures):
     fig, axes = plt.subplots(rows, cols, figsize=(15, 15))
@@ -410,7 +402,9 @@ for fig_num in range(num_figures):
         data_simu_values = data_simu[key]
         data_simu_pdr_values = data_simu_pdr[key]
 
-        data_regression_values = dict[key]["predictions"]
+        data_regression_values = dict[key]
+
+
         data_expe_values = data_expe_values[-len(data_regression_values):]
         data_simu_values = data_simu_values[-len(data_regression_values):]
         data_simu_pdr_values = data_simu_pdr_values[-len(data_regression_values):]
@@ -426,9 +420,9 @@ for fig_num in range(num_figures):
         ax.plot(y_exp, label='experiments')
         ax.plot(y_sim, label='simulation')
         ax.plot(y_sim_pdr, label='simulation_pdr')
-        ax.plot(data_regression_values, label='regression')
+        ax.plot(data_regression_values, label='Adaptive regression')
 
-        if fig_num == 0 and subplot_index == 0:
+        if fig_num == 0 or subplot_index == 0:
             handles, labels = ax.get_legend_handles_labels()
             fig.legend(handles, labels, loc='upper center')
 

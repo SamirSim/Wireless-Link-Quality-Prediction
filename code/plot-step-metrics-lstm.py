@@ -340,24 +340,28 @@ else:
 
     # Create the violin plot
     #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
-    sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
     #plt.yscale('log')
 
     # Add title and labels
     plt.title('MSE')
     plt.xlabel('Step')
     plt.ylabel('MSE')
-    plt.legend(loc='upper right')
+    plt.legend()
+    plt.grid()
 
     plt.subplot(2, 1, 2)
     #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
-    sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
     #plt.yscale('log')
 
     # Add title and labels
     plt.title('MAE')
     plt.xlabel('Step')
     plt.ylabel('MAE')
+    plt.grid()
 
     plt.tight_layout()
 

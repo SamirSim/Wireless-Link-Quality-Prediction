@@ -333,7 +333,6 @@ else:
 
     data_simu_pdr = series_list[1]
 
-couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
 
 # Create a list to hold the couples
 couples = []
@@ -346,6 +345,8 @@ for i in range(2, 13):
             # Add the pair (i, j) to the list
             couples.append((i, j))
 Position = range(1,17)
+
+couples = [(2, 10), (2, 9), (7, 9), (6, 10), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (7, 6), (6, 9)]
 
 k = -1
 mean_pdr_total = 0
@@ -361,9 +362,9 @@ for key, value in data_expe.items():
 # couples is a list of tuples where each tuple contains (n, m)
 
 # Adjust the following constants as needed
-subplots_per_figure = 25
-rows = 5  # Adjust based on the desired subplot arrangement
-cols = 5  # Adjust based on the desired subplot arrangement
+subplots_per_figure = 9
+rows = 3  # Adjust based on the desired subplot arrangement
+cols = 3  # Adjust based on the desired subplot arrangement
 
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
 
