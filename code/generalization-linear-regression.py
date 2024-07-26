@@ -180,6 +180,15 @@ average_error = sum(errors) / len(errors)
 print(f'Average Prediction Error (MAE): {average_error:.4f}')
 print(f'Mean Squared Error (MSE): {error_mse:.4f}')
 
+# Plot errors
+plt.figure(figsize=(10, 6))
+plt.violinplot(errors)
+plt.title('Prediction Errors for Leave-One-Out Cross-Validation')
+plt.xlabel('Sample')
+plt.ylabel('Mean Absolute Error (MAE)')
+plt.grid(True)
+plt.show()
+
 
 # Convert to DataFrame
 df = pd.DataFrame(data).T

@@ -346,7 +346,9 @@ for i in range(2, 13):
             couples.append((i, j))
 Position = range(1,17)
 
-couples = [(2, 10), (2, 9), (7, 9), (6, 10), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (7, 6), (6, 9)]
+#couples = [(2, 10), (2, 9), (7, 9), (6, 10), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (7, 6), (6, 9)]
+
+couples = [(10, 2), (4, 11), (2, 9)]
 
 k = -1
 mean_pdr_total = 0
@@ -362,17 +364,19 @@ for key, value in data_expe.items():
 # couples is a list of tuples where each tuple contains (n, m)
 
 # Adjust the following constants as needed
-subplots_per_figure = 9
-rows = 3  # Adjust based on the desired subplot arrangement
+subplots_per_figure = 3
+rows = 1  # Adjust based on the desired subplot arrangement
 cols = 3  # Adjust based on the desired subplot arrangement
 
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
 
 link_mse = {'first': ['m3-2_m3-7', 'm3-2_m3-12', 'm3-3_m3-8', 'm3-3_m3-10', 'm3-4_m3-10', 'm3-4_m3-11', 'm3-4_m3-12', 'm3-6_m3-10', 'm3-6_m3-12', 'm3-7_m3-2', 'm3-8_m3-3', 'm3-10_m3-3', 'm3-10_m3-4', 'm3-10_m3-6', 'm3-11_m3-2', 'm3-11_m3-4', 'm3-12_m3-2', 'm3-12_m3-4', 'm3-12_m3-6'], 'second': ['m3-2_m3-3', 'm3-2_m3-4', 'm3-2_m3-5', 'm3-2_m3-6', 'm3-2_m3-8', 'm3-2_m3-9', 'm3-2_m3-10', 'm3-2_m3-11', 'm3-3_m3-2', 'm3-3_m3-4', 'm3-3_m3-5', 'm3-3_m3-6', 'm3-3_m3-7', 'm3-3_m3-9', 'm3-3_m3-11', 'm3-3_m3-12', 'm3-4_m3-2', 'm3-4_m3-3', 'm3-4_m3-5', 'm3-4_m3-6', 'm3-4_m3-7', 'm3-4_m3-8', 'm3-4_m3-9', 'm3-5_m3-2', 'm3-5_m3-3', 'm3-5_m3-4', 'm3-5_m3-6', 'm3-5_m3-7', 'm3-5_m3-8', 'm3-5_m3-9', 'm3-5_m3-10', 'm3-5_m3-11', 'm3-5_m3-12', 'm3-6_m3-2', 'm3-6_m3-3', 'm3-6_m3-4', 'm3-6_m3-5', 'm3-6_m3-7', 'm3-6_m3-8', 'm3-6_m3-9', 'm3-6_m3-11', 'm3-7_m3-3', 'm3-7_m3-4', 'm3-7_m3-5', 'm3-7_m3-6', 'm3-7_m3-8', 'm3-7_m3-9', 'm3-7_m3-10', 'm3-7_m3-11', 'm3-7_m3-12', 'm3-8_m3-2', 'm3-8_m3-4', 'm3-8_m3-5', 'm3-8_m3-6', 'm3-8_m3-7', 'm3-8_m3-9', 'm3-8_m3-10', 'm3-8_m3-11', 'm3-8_m3-12', 'm3-9_m3-2', 'm3-9_m3-3', 'm3-9_m3-4', 'm3-9_m3-5', 'm3-9_m3-6', 'm3-9_m3-7', 'm3-9_m3-8', 'm3-9_m3-10', 'm3-9_m3-11', 'm3-9_m3-12', 'm3-10_m3-2', 'm3-10_m3-5', 'm3-10_m3-7', 'm3-10_m3-8', 'm3-10_m3-9', 'm3-10_m3-11', 'm3-10_m3-12', 'm3-11_m3-3', 'm3-11_m3-5', 'm3-11_m3-6', 'm3-11_m3-7', 'm3-11_m3-8', 'm3-11_m3-9', 'm3-11_m3-10', 'm3-11_m3-12'], 'third': ['m3-12_m3-3', 'm3-12_m3-5', 'm3-12_m3-7', 'm3-12_m3-8', 'm3-12_m3-9', 'm3-12_m3-10', 'm3-12_m3-11'], 'nb_first': 19, 'nb_second': 84, 'nb_third': 7}
 
+plt.rcParams.update({'font.size': 17})
 for fig_num in range(num_figures):
-    fig, axes = plt.subplots(rows, cols, figsize=(15, 15))
-    fig.subplots_adjust(hspace=0.5, wspace=0.5)
+    fig, axes = plt.subplots(rows, cols, figsize=(27, 8))
+    
+    fig.subplots_adjust(hspace=0.2, wspace=0.1)
     axes = axes.flatten()  # Flatten the 2D array of axes for easy indexing
 
     for subplot_index in range(subplots_per_figure):
@@ -397,13 +401,18 @@ for fig_num in range(num_figures):
         y_sim_pdr = np.array(data_simu_pdr_values)
 
         ax = axes[subplot_index]
+        
         ax.set_title(key)
         ax.plot(y_exp, label='experiments')
         ax.plot(y_sim, label='simulation')
         ax.plot(y_sim_pdr, label='simulation_pdr')
+        ax.set_xlabel('Time Window', fontsize=19)
 
         if fig_num == 0 and subplot_index == 0:
+            ax.set_ylabel('Number of packets received', fontsize=19)
             handles, labels = ax.get_legend_handles_labels()
-            fig.legend(handles, labels, loc='upper center')
+            fig.legend(handles, labels)
 
-    plt.show()
+    #plt.show()
+    plt.savefig("Links.pdf", format="pdf", bbox_inches="tight")
+    sys.exit(0)

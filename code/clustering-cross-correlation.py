@@ -11,7 +11,7 @@ from scipy.spatial.distance import pdist, squareform # type: ignore
 from statsmodels.tsa.stattools import acf # type: ignore
 from scipy.signal import correlate # type: ignore
 
-n_clusters = 4 # Number of clusters
+n_clusters = 3 # Number of clusters
 
 # Load the series_list from the file
 with open('../data/series_list_customized_p.json', 'r') as file:
@@ -21,7 +21,7 @@ with open('../data/cluster_data.json', 'r') as file:
     regressor_perf = json.load(file) # َAdaptive Regressor Performance
 
 print(regressor_perf)
-step = 2
+step = 1
 
 perf_data = regressor_perf[str(step)]
 

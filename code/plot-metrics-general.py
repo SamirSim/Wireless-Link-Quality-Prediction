@@ -7,6 +7,7 @@ from sklearn.metrics import roc_curve, auc # type: ignore
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
 import numpy as np # type: ignore
 from scipy.special import softmax # type: ignore
+import sys
 
 # ARIMA
 result = []
@@ -105,9 +106,10 @@ ada_boost = df_sorted_complete_regression[df_sorted_complete_regression["regress
 extra_trees = df_sorted_complete_regression[df_sorted_complete_regression["regressor"] == "ExtraTreesRegressor()"]
 
 # Create violin plots for accuracy and recall
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(7, 6))
+plt.rcParams.update({'font.size': 13})
 
-plt.subplot(2, 1, 1)
+#plt.subplot(2, 1, 1)
 # Plot the violin plots for each dataset
 # Add a category column to each dataframe
 random_forest['Category'] = 'Random Forest'
@@ -118,21 +120,30 @@ ada_boost['Category'] = 'Ada Boost'
 extra_trees['Category'] = 'Extra Trees'
 df_sorted_arima['Category'] = 'ARIMA'
 
+df_sorted_arima['rmse'] = np.sqrt(df_sorted_arima['mse'])
+random_forest['rmse'] = np.sqrt(random_forest['mse'])
+svr['rmse'] = np.sqrt(svr['mse'])
+gradient_boosting['rmse'] = np.sqrt(gradient_boosting['mse'])
+decision_tree['rmse'] = np.sqrt(decision_tree['mse'])
+ada_boost['rmse'] = np.sqrt(ada_boost['mse'])
+extra_trees['rmse'] = np.sqrt(extra_trees['mse'])
+
 # Concatenate the dataframes
 df_combined = pd.concat([random_forest, svr, gradient_boosting, decision_tree, ada_boost, extra_trees, df_sorted_arima])
 
 # Create the violin plot
-#sns.violinplot(x="Step", y="mse", hue="Category", density_norm="count", data=df_combined, cut=0, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
-sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
+#sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
+sns.boxplot(x="Step", y="rmse", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
 plt.yscale('log')
 
 # Add title and labels
-plt.title('MSE')
-plt.xlabel('Step')
-plt.ylabel('MSE')
+plt.title('RMSE')
+plt.xlabel('Prediction Step')
+plt.ylabel('RMSE')
 #plt.legend(loc='upper right')
 
 plt.grid()
+"""
 plt.subplot(2, 1, 2)
 #sns.violinplot(x="Step", y="mae", hue="Category", density_norm="count", data=df_combined, cut=0, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
 sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"ARIMA": "red", "Random Forest": "blue", "SVR": "green", "Gradient Boosting": "orange", "Decision Tree": "purple", "Ada Boost": "brown", "Extra Trees": "pink"})
@@ -146,6 +157,7 @@ plt.ylabel('MAE')
 plt.tight_layout()
 
 plt.grid()
+"""
 plt.show()
 
 # Regression
@@ -167,6 +179,8 @@ for elem in result:
     all_predictions = []
 
     for key, value in elem.items():
+        if int(key) > 10:
+            break
         for key_2, value_2 in value.items():
             try:
                 for elem in value_2:
@@ -222,7 +236,7 @@ for elem in result:
         step = int(key)
         mse_list = []
         maes_list = []
-        if step >= 1:
+        if step <= 10:
             print("step: ", step)
             best_predictions = []
             for key_2, value_2 in value.items():
@@ -331,6 +345,8 @@ for elem in result:
         print(key)
         if key == "Time taken":
             break
+        if int(key) > 10:
+            break
         #time.sleep(2)
         for key_2, value_2 in value.items():
             try:
@@ -370,9 +386,11 @@ df_rnn= pd.DataFrame(data)
 df_sorted_rnn = df_rnn.sort_values(by="Step")
 
 # Plotting
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(7, 6))
+plt.rcParams.update({'font.size': 13})
 
-plt.subplot(2, 1, 1)
+
+#plt.subplot(2, 1, 1)
 # Plot the violin plots for each dataset
 # Add a category column to each dataframe
 df_sorted_adaptive_regression['Category'] = 'Adaptive Regression'
@@ -380,22 +398,16 @@ df_sorted_regression['Category'] = 'Regression'
 df_sorted_arima['Category'] = 'ARIMA'
 df_sorted_rnn['Category'] = 'RNN'
 
+df_sorted_adaptive_regression['rmse'] = np.sqrt(df_sorted_adaptive_regression['mse'])
+df_sorted_regression['rmse'] = np.sqrt(df_sorted_regression['mse'])
+df_sorted_arima['rmse'] = np.sqrt(df_sorted_arima['mse'])
+df_sorted_rnn['rmse'] = np.sqrt(df_sorted_rnn['mse'])
+
 # Concatenate the dataframes
 df_combined = pd.concat([df_sorted_adaptive_regression, df_sorted_regression, df_sorted_rnn])
 
 # Create the violin plot
-#sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
-sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green", "RNN": "red"})
-plt.yscale('log')
-plt.grid()
-
-# Add title and labels
-plt.title('MSE')
-plt.xlabel('Step')
-plt.ylabel('MSE')
-plt.legend()
-
-plt.subplot(2, 1, 2)
+"""
 #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
 sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green", "RNN": "red"})
 plt.yscale('log')
@@ -405,7 +417,24 @@ plt.title('MAE')
 plt.xlabel('Step')
 plt.ylabel('MAE')
 plt.grid()
+"""
+#plt.subplot(2, 1, 2)
 
+#sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
+sns.boxplot(x="Step", y="rmse", hue="Category", data=df_combined, palette={"Adaptive Regression": "blue", "Regression": "green", "RNN": "red"})
+plt.yscale('log')
+
+# Add title and labels
+plt.title('RMSE')
+plt.xlabel('Prediction Step')
+plt.ylabel('RMSE')
+plt.grid()
+
+
+plt.legend()
 plt.tight_layout()
 
+
+plt.savefig("Adaptive-Models-RMSE.pdf", format="pdf", bbox_inches="tight")
+sys.exit(0)
 plt.show()

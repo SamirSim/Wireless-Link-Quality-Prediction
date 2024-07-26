@@ -7,6 +7,7 @@ from sklearn.metrics import roc_curve, auc # type: ignore
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
 import numpy as np # type: ignore
 from scipy.special import softmax # type: ignore
+import sys
 
 threshold = 40
 SLA = threshold
@@ -176,6 +177,8 @@ else:
             if key == "Time taken":
                 break
             #time.sleep(2)
+            if int(key) > 10:
+                break
             for key_2, value_2 in value.items():
                 try:
                     print("here ", key_2)
@@ -230,6 +233,8 @@ else:
         for key, value in elem.items():
             print(key)
             if key == "Time taken":
+                break
+            if int(key) > 10:
                 break
             #time.sleep(2)
             for key_2, value_2 in value.items():
@@ -287,6 +292,8 @@ else:
             print(key)
             if key == "Time taken":
                 break
+            if int(key) > 10:
+                break
             #time.sleep(2)
             for key_2, value_2 in value.items():
                 try:
@@ -326,14 +333,20 @@ else:
     df_sorted_gru = df_gru.sort_values(by="Step")
 
     # Plotting
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(7, 6))
+    plt.rcParams.update({'font.size': 13})
 
-    plt.subplot(2, 1, 1)
+
+    #plt.subplot(2, 1, 1)
     # Plot the violin plots for each dataset
     # Add a category column to each dataframe
     df_sorted_lstm['Category'] = 'LSTM'
     df_sorted_rnn['Category'] = 'RNN'
     df_sorted_gru['Category'] = 'GRU'
+
+    df_sorted_lstm['rmse'] = np.sqrt(df_sorted_lstm['mse'])
+    df_sorted_rnn['rmse'] = np.sqrt(df_sorted_rnn['mse'])
+    df_sorted_gru['rmse'] = np.sqrt(df_sorted_gru['mse'])
 
     # Concatenate the dataframes
     df_combined = pd.concat([df_sorted_rnn, df_sorted_lstm, df_sorted_gru])
@@ -341,20 +354,20 @@ else:
     # Create the violin plot
     #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
     #sns.violinplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
-    sns.boxplot(x="Step", y="mse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    sns.boxplot(x="Step", y="rmse", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "red", "GRU": "green"})
     #plt.yscale('log')
 
     # Add title and labels
-    plt.title('MSE')
-    plt.xlabel('Step')
-    plt.ylabel('MSE')
+    plt.title('RMSE')
+    plt.xlabel('Prediction Step')
+    plt.ylabel('RMSE')
     plt.legend()
     plt.grid()
-
+    """
     plt.subplot(2, 1, 2)
     #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, cut=0, palette={"Adaptive Regression": "blue", "Regression": "green"})
     #sns.violinplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
-    sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "green", "GRU": "red"})
+    sns.boxplot(x="Step", y="mae", hue="Category", data=df_combined, palette={"LSTM": "blue", "RNN": "red", "GRU": "green"})
     #plt.yscale('log')
 
     # Add title and labels
@@ -364,5 +377,7 @@ else:
     plt.grid()
 
     plt.tight_layout()
-
+    """
+    plt.savefig("Neural-Networks.pdf", format="pdf", bbox_inches="tight")
+    sys.exit(0)
     plt.show()

@@ -10,9 +10,10 @@ from tslearn.preprocessing import TimeSeriesScalerMeanVariance # type: ignore
 from scipy.spatial.distance import pdist, squareform # type: ignore
 from statsmodels.tsa.stattools import acf # type: ignore
 from scipy.interpolate import make_interp_spline # type: ignore
+from tslearn.utils import to_time_series_dataset # type: ignore
 
 DTW = True # Use Dynamic Time Warping instead of Euclidean distance
-n_clusters = 4 # Number of clusters
+n_clusters = 2 # Number of clusters
 
 # Smoothing function
 def smooth_curve(x, y, num_points=300):
@@ -28,8 +29,8 @@ with open('../data/series_list_customized_p.json', 'r') as file:
 with open('../data/cluster_data.json', 'r') as file:
     regressor_perf = json.load(file) # َAdaptive Regressor Performance
 
-print(regressor_perf)
-step = 2
+#print(regressor_perf)
+step = 1
 
 perf_data = regressor_perf[str(step)]
 
@@ -55,10 +56,17 @@ time_series_data_filtered = {k: v for k, v in time_series_data.items() if k not 
 # Convert the dictionary to a list of time series
 time_series_keys = list(time_series_data_filtered.keys())
 time_series_values = list(time_series_data_filtered.values())
+max_len = min(len(ts) for ts in time_series_values)
+
+time_series_values = to_time_series_dataset(time_series_values)
 
 # Pad the sequences so they have the same length
-max_len = min(len(ts) for ts in time_series_values)
-time_series_values_padded = pad_sequences(time_series_values, maxlen=max_len, padding='post', dtype='float')
+#time_series_values_padded = pad_sequences(time_series_values, maxlen=max_len, padding='post', dtype='float', value=np.nan)
+
+time_series_values_padded = time_series_values
+
+# Replace padding value (0) with NaN
+#time_series_values_padded = np.where(time_series_values_padded == 0.0, np.nan, time_series_values_padded)
 
 # Standardize the data
 if DTW: # Dynamic Time Warping
@@ -66,15 +74,18 @@ if DTW: # Dynamic Time Warping
 else:
     scaler = StandardScaler()
 
-time_series_values_scaled = scaler.fit_transform(time_series_values_padded)
+#time_series_values_scaled = scaler.fit_transform(time_series_values_padded)
+time_series_values_scaled = time_series_values_padded
 
 # Apply KMeans clustering
 if DTW:
-    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw", max_iter=20, random_state=42)
+    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric="dtw", max_iter=40, random_state=42)
 else:
-    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric="euclidean", max_iter=20, random_state=42)
+    kmeans = TimeSeriesKMeans(n_clusters=n_clusters, metric="euclidean", max_iter=40, random_state=42)
 
 clusters = kmeans.fit_predict(time_series_values_scaled)
+
+print(clusters)
 
 avg_mae = {}
 avg_mse = {}
@@ -84,9 +95,11 @@ for i, key in enumerate(time_series_keys):
     try:
         avg_mae[clusters[i]] = avg_mae.get(clusters[i], 0) + res[key]['mae']
         avg_mse[clusters[i]] = avg_mse.get(clusters[i], 0) + res[key]['mse']
-    except:
+    except Exception as e:
+        print("here:", e)
         pass
 
+print(avg_mae)
 for i in range(n_clusters):
     avg_mae[i] /= len(clusters[clusters == i])
     avg_mse[i] /= len(clusters[clusters == i])
@@ -99,22 +112,29 @@ plt.figure(figsize=(12, 8))
 plt.subplot(2, 1, 1)
 colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:gray']  # Colors for the clusters
 
+print(time_series_values_scaled, time_series_values_scaled[:max_len])
 for i in range(n_clusters):
     cluster_indices = clusters == i
-    cluster_values = time_series_values_padded[cluster_indices]
+    time_series_values_scaled = time_series_values_scaled
+    cluster_values = time_series_values_scaled[cluster_indices]
 
-    mean_values = np.mean(cluster_values, axis=0)
-    min_values = np.min(cluster_values, axis=0)
-    max_values = np.max(cluster_values, axis=0)
+    print(cluster_values)
 
-    plt.plot(mean_values, label=f'Cluster {i}', color=colors[i])
-    plt.fill_between(
-        range(len(mean_values)),
-        min_values,
-        max_values,
-        color=colors[i],
-        alpha=0.2  # Faded color for min-max range
-    )
+    mean_values = np.mean(cluster_values[:max_len], axis=0)
+    min_values = np.min(cluster_values[:max_len], axis=0)
+    max_values = np.max(cluster_values[:max_len], axis=0)
+
+    print("Cluster: ", i, " Mean: ", mean_values, " Min: ", min_values, " Max: ", max_values)
+    print(max_len)
+
+    plt.plot(mean_values[:max_len], label=f'Cluster {i}', color=colors[i])
+    #plt.fill_between(
+    #    range(max_len),
+    #    min_values,
+    #    max_values,
+    #    color=colors[i],
+    #   alpha=0.2  # Faded color for min-max range
+    #)
 
 plt.legend()
 plt.title('Clustered Time Series')
