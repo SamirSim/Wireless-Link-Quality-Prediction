@@ -1,197 +1,375 @@
 import sys
-# LSTM for international airline passengers problem with window regression framing
-import numpy as np
-import matplotlib.pyplot as plt
-import tensorflow as tf
-from pandas import read_csv
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import LSTM
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_squared_error
+import numpy as np # type: ignore
+import matplotlib.pyplot as plt # type: ignore
+from pandas import read_csv # type: ignore
+import random
+from sklearn import linear_model, metrics # type: ignore
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, roc_curve, auc # type: ignore
+from sklearn.preprocessing import MinMaxScaler # type: ignore
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor, ExtraTreesRegressor # type: ignore
+from sklearn.tree import DecisionTreeRegressor # type: ignore
+from sklearn.linear_model import LinearRegression # type: ignore
+from sklearn.svm import SVR # type: ignore
+from sklearn.neighbors import KNeighborsRegressor # type: ignore
+from sklearn.model_selection import train_test_split # type: ignore
+from scipy.special import softmax # type: ignore
+from tensorflow.keras.models import Sequential # type: ignore
+from tensorflow.keras.layers import LSTM, Bidirectional, Dense, GRU, SimpleRNN, Conv1D, Flatten # type: ignore
+from statsmodels.tsa.arima.model import ARIMA # type: ignore
+from math import sqrt
+from pandas import DataFrame # type: ignore
+import time
+import warnings
+import random
+import string
+import json
 
+warnings.filterwarnings("ignore")
 
-# convert an array of values into a dataset matrix
-def create_dataset(dataset, look_back=1):
-    dataX, dataY = [], []
-    for i in range(len(dataset)-look_back-1):
-        a = dataset[i:(i+look_back),0]
-        dataX.append(a)
-        dataY.append(dataset[i + look_back, 0])
-    return np.array(dataX), np.array(dataY)
+random.seed(10)
 
-log_filename = "telemetry.rawdata"
+BATCH_SIZE = 1
+EPOCHS = 30
 
-try:
-       log_file = open(log_filename, "r" )
-except IOError:
-    print(sys.argv[0]+": "+log_filename+": cannot open file")
-    sys.exit(3)
+def evaluate_model(model, x, y):
+    # Evaluate the model
+    X_train, X_val, y_train, y_val = train_test_split(x, y, test_size=0.2)
 
-data = log_file.readlines()
+    model.fit(X_train, y_train, epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=0)
+    y_pred = model.predict(X_val)
 
-communication_dict = {}
+    print("Predictions: ", y_pred, "y_val: ", y_val)
+    for i in range(len(y_pred)):
+        for j in range(len(y_pred[i])):
+            if y_pred[i][j] < 0:
+                y_pred[i][j] = 0
+            elif y_pred[i][j] > 50:
+                y_pred[i][j] = 50
 
-list_nodes = []
+    mse = mean_squared_error(y_val, y_pred)
+    mae = mean_absolute_error(y_val, y_pred)
 
-for line in data:
-    receiver = "Received" in line
-    sender = "Sending" in line
-    if not sender and not receiver :
-        continue
+    print("Mean Squared Error: ", mse)
+    print("Mean Absolute Error: ", mae)
+
+    print("Real values: ", y_val)
+    print("Predicted values: ", y_pred)
+    print("Mean Squared Error: ", mean_squared_error(y_val, y_pred))
     
-    timestamp, node_id, event_type, message_id = line.split(";")
+    return mse, mae
 
-    if node_id not in list_nodes:
-        list_nodes.append(node_id)
 
-    if event_type == "Sending broadcast":
-        sender = node_id
-        message_id = message_id.strip() 
-        if message_id not in communication_dict:
-            communication_dict[message_id] = {"sender": sender, "receivers_list": []}
+# LSTM Model
+def build_lstm_model(input_shape):
+    model = Sequential()
+    model.add(LSTM(20, input_shape=input_shape))
+    model.add(Dense(1))
+    return model
 
-    elif event_type == "Received":
-        receiver = node_id
-        message_id = message_id.strip()  # Remove leading space
+# Bi-LSTM Model
+def build_bilstm_model(input_shape):
+    model = Sequential()
+    model.add(Bidirectional(LSTM(10), input_shape=input_shape))
+    model.add(Dense(1))
+    return model
 
-        #print(communication_dict)
-        if message_id in communication_dict:
-            communication_dict[message_id]["receivers_list"].append(receiver)
-        else:
-            print("Message ", message_id," received before sending")
+# Encoder-Decoder LSTM Model
+def build_ed_lstm_model(input_shape):
+    model = Sequential()
+    model.add(LSTM(20, input_shape=input_shape))
+    model.add(Dense(1))
+    return model
 
-# Print the resulting dictionary
-#print(communication_dict)
+# CNN Model
+def build_cnn_model(input_shape):
+    model = Sequential()
+    model.add(Conv1D(64, kernel_size=2, activation='relu', input_shape=input_shape))
+    model.add(Conv1D(20, kernel_size=2, activation='relu'))
+    model.add(Flatten())
+    model.add(Dense(1))
+    return model
 
-temp_dict = {}
+# GRU Model
+def build_gru_model(input_shape):
+    model = Sequential()
+    model.add(GRU(128, input_shape=input_shape))
+    model.add(Dense(1))
+    return model
 
-for key, value in communication_dict.items():
-    sender = value.get("sender")
-    if sender not in temp_dict:
-        temp_dict[sender] = []
-    temp_dict[sender].append(value.get("receivers_list"))
+# RNN Model
+def build_rnn_model(input_shape):
+    model = Sequential()
+    model.add(SimpleRNN(64, return_sequences=True, input_shape=input_shape))
+    model.add(SimpleRNN(20))
+    model.add(Dense(1))
+    return model
 
-#print(series_dict)
-first_node = 100
-nb_nodes = 20
+# Load the series_list from the file
+with open('../data/series_list_customized_p.json', 'r') as file:
+    series_list = json.load(file)
 
-series_dict = {}
+data_expe = series_list[0]
+data_simu = series_list[1]
 
-#print(list_nodes)
+with open('../data/series_list_p0,56.json', 'r') as file:
+    series_list = json.load(file)
 
-for key, value in temp_dict.items():
-    #print(key,value)
-    sender = key
-    cpt = 1
+data_simu_pdr = series_list[1]
 
-    # Loop over all the other nodes
-    node = first_node
-    while cpt < nb_nodes:
-        if "m3-"+str(node) in list_nodes:
-            receiver = "m3-"+str(node)
-            new_key = sender+'_'+receiver
-            series_dict[new_key] = []
-            for list in value:
-                if receiver in list:
-                    series_dict[new_key].append(1)
-                else:
-                    series_dict[new_key].append(0)
-            cpt = cpt + 1
-            node = node + 1
-        else:
-            node = node + 1
+# Create a list to hold the couples
+couples = []
 
-#print(series_dict)
+# Loop through all numbers from 2 to 12
+for i in range(2, 13):
+    for j in range(2, 13):
+        # Skip pairs where the two elements are the same
+        if i != j:
+            # Add the pair (i, j) to the list
+            couples.append((i, j))
+Position = range(1,17)
+
+#couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
+#couples = [(2, 10), (2, 9)]
+#couples = [(5,6)]
+k = -1
+
+for n, m in couples:
+    k = k + 1
+    sender = "m3-"+str(n)
+    receiver = "m3-"+str(m)
+
+    key = sender+"_"+receiver
+    data_expe_values = data_expe[key]
+    data_simu_values = data_simu[key]
+    data_simu_pdr_values = data_simu_pdr[key]
+
+    data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+    data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+
+    x = np.arange(1, len(data_simu_values) + 1) 
+    y_exp = np.array(data_expe_values)
+    y_sim = np.array(data_simu_values)
+    y_sim_pdr = np.array(data_simu_pdr_values)
+
+k = -1
+mae_list = []
+mse_list = []
+
+best_cfgs = {}
+
+start = time.time()
+
+for n, m in couples:
+    result = {}
+    k = k + 1
+    sender = "m3-"+str(n)
+    receiver = "m3-"+str(m)
+
+    key = sender+"_"+receiver
+
+    data_expe_values = data_expe[key]
+    data_simu_values = data_simu[key]
+    data_simu_pdr_values = data_simu_pdr[key]
+    data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+    data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
             
-sender = "m3-119"
-receiver = "m3-102"
+    # split into train and test sets
+    X = data_expe_values
+    size = int(len(X) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+    train, test = X[0:size], X[size:len(X)]
+    history = [x for x in train]
+    predictions = []
 
-key = sender+"_"+receiver
-data = series_dict[key] 
+    lstm = Sequential()
 
-# fix random seed for reproducibility
-tf.random.set_seed(7)
-# load the dataset
-dataframe = read_csv('passengers.csv', usecols=[1], engine='python')
-#dataset = dataframe.values
-dataset = np.array([[x] for x in data])
-#dataset = dataset.astype('float32')
-# normalize the dataset
-scaler = MinMaxScaler(feature_range=(0, 1))
-dataset = scaler.fit_transform(dataset)
+    regressors = [lstm]
+    regressor_strings = [str(regressor) for regressor in regressors]
+    min_mse = float("inf")
+    min_mae = float("inf")
 
-print(np.array(data), dataset)
-print(np.array(data).shape, dataset.shape)
+    for regressor_string in regressor_strings:
+        window_steps = [3, 5, 10, 15, 20]
+        for window_step in window_steps:
+            # Prepare sequences
+            def create_sequences(data, window_step):
+                X, y = [], []
+                for i in range(len(data) - window_step):
+                    a = data[i:(i + window_step)]
+                    X.append(a)
+                    y.append(data[i + window_step])
+                return np.array(X), np.array(y)
 
-#print(data.shape, dataset.shape)
+            X_train, y_train = create_sequences(train, window_step)
 
-# split into train and test sets
-train_size = int(len(dataset) * 0.67)
-test_size = len(dataset) - train_size
-train, test = dataset[0:train_size], dataset[train_size:len(dataset)]
-# reshape into X=t and Y=t+1
-look_back = 3
-trainX, trainY = create_dataset(train, look_back)
-testX, testY = create_dataset(test, look_back)
+            input_shape = (window_step, 1)
+            # Instantiate each model
+            #regressor = build_lstm_model(input_shape)
+            #regressor = build_bilstm_model(input_shape)
+            #regressor = build_ed_lstm_model(input_shape)
+            #regressor = build_cnn_model(input_shape)
+            #regressor = build_gru_model(input_shape)
+            regressor = build_rnn_model(input_shape)
+        
+            regressor.compile(optimizer='adam', loss='mean_squared_error')
 
-# reshape input to be [samples, time steps, features]
-trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
-testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
+            mse, mae = evaluate_model(regressor, X_train, y_train)
 
-print(trainX)
+            print("Window Step: ", window_step, " MAE: ", mae, " MSE: ", mse)
+            #time.sleep(2)
 
-#while 1:
-#    continue
+            if mse < min_mse:
+                min_mae = mae
+                min_mse = mse
+                best_regressor = regressor
+                best_window_step = window_step
+
+    best_cfgs[key] = {"regressor": str(best_regressor), "window_step": best_window_step, "MAE": min_mae, "MSE": min_mse}
+
+print(best_cfgs)
+
+steps_list = [1, 2, 3, 5, 7, 10, 15, 20]
+#steps_list = [1, 2]
+elems = []
+for prediction_step in steps_list:
+    result = {}
+    elem = {}
+
+    for n, m in couples:
+        k = k + 1
+        sender = "m3-"+str(n)
+        receiver = "m3-"+str(m)
+
+        key = sender+"_"+receiver
+
+        data_expe_values = data_expe[key]
+        data_simu_values = data_simu[key]
+        data_simu_pdr_values = data_simu_pdr[key]
+        data_simu_values = data_simu_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+        data_simu_pdr_values = data_simu_pdr_values[0:len(data_expe_values)] # Cut the simulation data to match the size of the experiments data
+            
+        # split into train and test sets
+        X = data_expe_values
+        size = int(len(X) * 0.66) # First 2/3 of the data are used for training, and the rest is used for testing
+        train, test = X[0:size], X[size:len(X)]
+        history = [x for x in train]
+
+        regressor_results = []
+        for regressor_string in regressor_strings:
+            best_regressor = regressor_string
+            best_window_step = best_cfgs[key]["window_step"]
+            min_mae = best_cfgs[key]["MAE"]
+            min_mse = best_cfgs[key]["MSE"]
+            
+            # The best regressor and window step are found
+            print("couple: ", (n,m), " step: ", prediction_step, " Best regressor: ", best_regressor, " window step: ", best_window_step, " MAE: ", min_mae, " MSE: ", min_mse)
+        
+            window_step = best_window_step
+            input_shape = (window_step, 1)
+            # Instantiate each model
+            #regressor = build_lstm_model(input_shape)
+            #regressor = build_bilstm_model(input_shape)
+            #regressor = build_ed_lstm_model(input_shape)
+            #regressor = build_cnn_model(input_shape)
+            #regressor = build_gru_model(input_shape)
+            regressor = build_rnn_model(input_shape)
+            
+            regressor.compile(optimizer='adam', loss='mean_squared_error')
+
+            X_train, y_train = create_sequences(train, window_step)
+
+            test = train[-window_step:] + test
+
+            input_shape = (window_step, 1)
+
+            regressor.fit(X_train, y_train, epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=0)
+
+            inputs = []
+            index = 0
+            predictions = []
+
+            while index < len(test):
+                print("Index: ", index, len(test))
+                new_test = [float(v) for v in test]
+                try:
+                    for i in range(index, index+prediction_step):
+                        input_window = new_test[i:window_step+i]
+                        reshaped_input_window = np.array(input_window).reshape(-1, 1)
+
+                        #reshaped_input_window = np.array(input_window).reshape(1, -1)
+                        inputs.append(reshaped_input_window)
+                        #print("reshaped input window: ", reshaped_input_window)
+                        #time.sleep(3)
+                        predicted_value = regressor.predict(reshaped_input_window)
+
+                        #predicted_value = scaler.inverse_transform(predicted_value)
+                        # Inverse transform the predicted value
+                        print("predicted value: ", predicted_value)
+                        #time.sleep(2)
+
+                        #print("predicted value: ", predicted_value[0][0])
+                        predictions.append(float(predicted_value[0][0]))
+                        print("New test: ", new_test)
+                        # Replace the element in the TestSet with the predicted value
+                        new_test[window_step+i] = float(predicted_value[0][0])
+                        i = i + 1
+                        #time.sleep(2)
+
+                    #print("test: ", test, index, window_step)
+                    print(test[index:index+window_step+prediction_step])
+                    refit_data = test[index:index+window_step+prediction_step]
+                    #print("refit data: ", refit_data)
+                                
+                    # Prepare data for refitting
+                    X_train, y_train = create_sequences(refit_data, window_step)
+                    #print("Refit with: X train: ", X_train, "y train: ", y_train)
+                    #time.sleep(1)
+                    index = index + prediction_step
+                            
+                    # Refit the model
+                    regressor.fit(X_train, y_train, epochs=EPOCHS, batch_size=BATCH_SIZE, verbose=2)
+
+                except KeyboardInterrupt:
+                    break
+                except Exception as e:
+                    print("Exception occured", e, " Index: ", index, len(test))
+                    break
+            
+            for i in range(len(predictions)):
+                if predictions[i] < 0:
+                    predictions[i] = 0
+                elif predictions[i] > 50:
+                    predictions[i] = 50
+
+            print("New Predictions: ", key, predictions)
 
 
-# create and fit the LSTM network
-model = Sequential()
-model.add(LSTM(4, input_shape=(1, look_back)))
-model.add(Dense(1, activation='sigmoid'))
-#model.compile(loss='mean_squared_error', optimizer='adam')
-model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-model.fit(trainX, trainY, epochs=100, batch_size=1, verbose=2)
-# make predictions
-trainPredict = model.predict(trainX)
-testPredict = model.predict(testX)
-# invert predictions
-trainPredict = scaler.inverse_transform(trainPredict)
-trainY = scaler.inverse_transform([trainY])
-testPredict = scaler.inverse_transform(testPredict)
-testY = scaler.inverse_transform([testY])
+            mse = mean_squared_error(test[:len(predictions)], predictions)
+            mae = mean_absolute_error(test[:len(predictions)], predictions)
 
-print(trainPredict, testPredict)
+            print("Test: ", test)
+            #time.sleep(2)
 
-# calculate root mean squared error
-trainScore = np.sqrt(mean_squared_error(trainY[0], trainPredict[:, 0]))
-print('Train Score: %.2f RMSE' % (trainScore))
-testScore = np.sqrt(mean_squared_error(testY[0], testPredict[:, 0]))
-print('Test Score: %.2f RMSE' % (testScore))
-# shift train predictions for plotting
-trainPredictPlot = np.empty_like(dataset)
-trainPredictPlot[:] = np.nan
-trainPredictPlot[look_back:len(trainPredict)+look_back, :] = trainPredict
-# shift test predictions for plotting
-testPredictPlot = np.empty_like(dataset)
-testPredictPlot[:] = np.nan
-testPredictPlot[len(trainPredict)+(look_back*2)+1:len(dataset)-1, :] = testPredict
+            regressor_results.append({"regressor": str(regressor), "window_step": window_step, "MAE": mae, "MSE": mse, "predictions": predictions})
+            mae_list.append(mae)
+            mse_list.append(mse)
 
-M_TEST = testX.shape[0] 
-predict_x=model.predict(testX) 
-classes_x=np.argmax(predict_x,axis=1)
-#y_hat = model.predict_classes(testX, batch_size=M_TEST, verbose=1)
-#score = sum(y_hat == y_test) / len(y_test)
-#print(f'Prediction accuracy = {score*100}%')
-#index = pd.date_range(start='2017-01-02', end='2018-06-19', freq='B')
-#for i in range(predict_x.shape[0]):
-print("predict: ", predict_x)
-print("y: ", trainX)
+        result[key] = regressor_results
+        #print("Results: ", regressor_results)
+        #print("Result: ", result)
+        
+    elem [prediction_step] = {"results": result}
+    elems.append(elem)    
+            
+    print('Mean Absolute Error (MAE) for step: ', str(prediction_step), ": ", np.mean(mae_list))
+    print('Mean Squared Error (MSE): ', np.mean(mse_list))
 
+print("-----------------")
+print(elems)
 
+end = time.time()
 
-# plot baseline and predictions
-plt.plot(scaler.inverse_transform(dataset))
-plt.plot(trainPredictPlot)
-plt.plot(testPredictPlot)
-plt.show()
+elems.append({"Time taken": end-start})
+
+filename = sys.argv[1].split(".")[0]
+with open('../data/'+filename+'.json', 'a') as file:
+    json.dump(elems, file)
