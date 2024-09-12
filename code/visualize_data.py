@@ -60,9 +60,10 @@ def create_dataset(dataset, look_back=1):
 log_filename_expe = "../data/merged-data.rawdata"
 log_filename_simu = "../data/cooja-data.rawdata"
 
+files = [log_filename_expe]
 series_list = [] # List containing both data from expe and simulation for comparison
 
-for log_filename in (log_filename_expe, log_filename_simu):
+for log_filename in files:
     try:
         log_file = open(log_filename, "r" )
     except IOError:
@@ -90,7 +91,7 @@ for log_filename in (log_filename_expe, log_filename_simu):
             sender = node_id
             message_id = message_id.strip() 
             if message_id not in communication_dict:
-                communication_dict[message_id] = {"sender": sender, "receivers_list": []}
+                communication_dict[message_id] = {"sender": sender, "receivers_list": [], "timestamps": []}
 
         elif event_type == "Received":
             receiver = node_id
@@ -99,25 +100,36 @@ for log_filename in (log_filename_expe, log_filename_simu):
             #print(communication_dict)
             if message_id in communication_dict:
                 communication_dict[message_id]["receivers_list"].append(receiver)
+                communication_dict[message_id]["timestamps"].append(str(timestamp))
                 if sender == receiver:
-                    print(message_id)
+                    print("Sender = Receiver ", message_id)
                     time.sleep(5)
             else:
                 print("Message ", message_id," received before sending")
 
     # Print the resulting dictionary
-    #print(communication_dict)
+    print(communication_dict)
 
     temp_dict = {}
     for key, value in communication_dict.items():
         sender = value.get("sender")
         if sender not in temp_dict:
             temp_dict[sender] = []
-        temp_dict[sender].append(value.get("receivers_list"))
+            
+        i = 0
+        l = []
+        for elem in value.get("receivers_list"):
+            elem = elem + ":"+str(value.get("timestamps")[i])
+            i = i + 1
+            l.append(elem)
+        temp_dict[sender].append(l)
+        #temp_dict[sender].append(value.get("receivers_list"))
+        #temp_dict[sender].append(value.get("timestamps"))
 
-    #print(series_dict)
-    #first_node = 95 # To change here according to the data coming from expe or simu
-    first_node = 1
+    print(temp_dict)
+    #time.sleep(10)
+    first_node = 95 # To change here according to the data coming from expe or simu
+    #first_node = 1
     nb_nodes = 5
 
     series_dict = {}
@@ -125,7 +137,8 @@ for log_filename in (log_filename_expe, log_filename_simu):
     #print(list_nodes)
     # Changed all node ids from ID to m3
     for key, value in temp_dict.items():
-        #print(key,value)
+        print("yes ", key)
+        time.sleep(5)
         sender = key
         cpt = 1
 
@@ -140,7 +153,7 @@ for log_filename in (log_filename_expe, log_filename_simu):
                 series_dict[new_key] = []
                 for list in value:
                     if receiver in list:
-                        series_dict[new_key].append(1)
+                        series_dict[new_key].append("1:"+timestamp)
                     else:
                         series_dict[new_key].append(0)
                 cpt = cpt + 1
