@@ -1,0 +1,2 @@
+*.txt filter=lfs diff=lfs merge=lfs -text
+data/logs-iotj-24h.txt filter=lfs diff=lfs merge=lfs -text

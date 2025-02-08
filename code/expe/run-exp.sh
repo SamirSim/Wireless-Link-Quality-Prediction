@@ -1,0 +1,2 @@
+# Usage: <exp name> <interval (s)> <payload size (B)> <exp duration (m)> <packets per second> <list of nodes> <packets per second for bursty traffic>
+./exp.sh "data-iotj" 1 30 1440 1 "99,123,133,143,150,153,159,163,166" 10

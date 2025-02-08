@@ -1,7 +1,3 @@
-numpy
-matplotlib
-tensorflow
-pandas
-scikit-learn
-PyQt5
-statsmodels
+version https://git-lfs.github.com/spec/v1
+oid sha256:f0972f7b144cc4df55789ca8250791391bd2581bf2972a7de975a71e93c19aaa
+size 73
