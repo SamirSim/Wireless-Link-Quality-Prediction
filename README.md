@@ -32,7 +32,8 @@ This project focuses on collecting time series data from a wireless network, ana
 
 ### `data/` - Experiment Logs  
 
-- **`logs-iotj-24h.txt`**: Raw logs from a **24-hour FIT IoT-Lab experiment**, used for generating time series.  
+- **`logs-iotj-24h.txt`**: Raw logs from a **24-hour FIT IoT-Lab experiment**, used for generating time series. 
+-  **`cooja-iotj-24h.txt`**: Preprocessed logs from a **24-min Cooja simulation**, extended using the same distribution (Gaussian), and then used for generating Cooja time series. 
 
 ## Usage  
 
