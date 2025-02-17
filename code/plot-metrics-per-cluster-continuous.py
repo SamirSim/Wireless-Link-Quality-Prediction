@@ -1,9 +1,9 @@
 import json
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from statsmodels.tsa.stattools import adfuller
-import pandas as pd
+import matplotlib.pyplot as plt # type: ignore
+import seaborn as sns # type: ignore
+import numpy as np # type: ignore
+from statsmodels.tsa.stattools import adfuller # type: ignore
+import pandas as pd # type: ignore
 
 # Load JSON files (replace with actual file paths)
 with open("../data/best-model-continuous-24h.json", "r") as f:
@@ -90,7 +90,7 @@ for link in adaptive_data:
 # Plotting
 #fig, axes = plt.subplots(2, 2, figsize=(14, 10))  # 2x2 grid for 4 clusters
 #clusters = ["Bad", "Average", "Good", "Excellent"]
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))  # 2x2 grid for 4 clusters
+fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharex=True, sharey=True)  # 2x2 grid for 4 clusters
 clusters = ["Average", "Good", "Excellent"]
 colors = ["yellow", "red", "orange", "green", "blue"]
 
@@ -110,7 +110,7 @@ for ax, cluster, color in zip(axes.flat, clusters, colors):
         df["Step"] = df["Step"].astype(int)
         # Keep only two steps at each time
         df = df[df["Step"].isin([1, 3, 5, 7, 9, 11, 13, 15, 17, 19])]
-        sns.boxplot(x="Step", y="MAE", hue="Approach", data=df, ax=ax, palette=["blue", "orange"], order=sorted(df["Step"].unique()))
+        sns.boxplot(x="Step", y="MAE", hue="Approach", data=df, ax=ax, palette=["green", "red"], order=sorted(df["Step"].unique()))
         
         ax.set_title(f"{cluster} Links (n={len(cluster_dict[cluster])})")
         ax.set_xlabel("Step")
@@ -119,5 +119,5 @@ for ax, cluster, color in zip(axes.flat, clusters, colors):
         ax.grid(True, linestyle="--", alpha=0.6)
 
 plt.tight_layout()
-plt.show()
-
+#plt.show()
+plt.savefig(f"../figures/mae-clusters.pdf", format="pdf", dpi=300)

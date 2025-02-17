@@ -1,6 +1,36 @@
 from collections import defaultdict
 import bisect
 import json
+import numpy as np #type: ignore
+
+def convert_time_to_seconds_milliseconds(time_str):
+    # Used for translating the timing format from Cooja's to FIT IoT-Lab's 
+    # Split the time string into hours, minutes, seconds, and milliseconds
+    parts = time_str.split(":")
+    if len(parts) == 3:
+        hours, minutes, seconds = parts
+    elif len(parts) == 2:
+        hours = 0
+        minutes, seconds = parts
+    else:
+        print(len(parts), parts)
+        raise ValueError("Invalid time format")
+
+    # Convert to integers
+    hours = int(hours)
+    minutes = int(minutes)
+    seconds = float(seconds)
+
+    # Convert hours to seconds
+    total_seconds = hours * 3600
+
+    # Add minutes to total seconds
+    total_seconds += minutes * 60
+
+    # Add remaining seconds
+    total_seconds += seconds
+
+    return total_seconds
 
 # Node MAC mapping
 node_mac_map = {
@@ -18,7 +48,7 @@ node_mac_map = {
 WINDOW_SIZE = 50  # Define time window size
 
 # Read log data from file
-with open("../data/logs-iotj-24h.txt", "r") as file:
+with open("../data/cooja-iotj-24h.txt", "r") as file:
     log_entries = file.readlines()
     log_entries = [line.strip() for line in log_entries]
 
@@ -30,7 +60,7 @@ sent_packets = []  # [(sender, packet_id, timestamp)]
 
 for entry in log_entries:
     parts = entry.split(";")
-    timestamp = float(parts[0])
+    timestamp = convert_time_to_seconds_milliseconds(parts[0])
     node_id = parts[1]
     event = parts[2]
     
@@ -84,8 +114,32 @@ while sent_packets:
     
     time_start = time_end
 
-print(windowed_reception)
+new_dict = {}
+for key, values in windowed_reception.items():
+    # Calculate the mean and standard deviation of the original series
+    original_series = values
+    mean = np.mean(original_series)
+    std_dev = np.std(original_series)
+
+    # Define the desired length of the series (1750 elements)
+    desired_length = 1750
+
+    # Calculate how many elements we need to generate
+    elements_needed = desired_length - len(original_series)
+
+    # Generate additional data points using the same normal distribution
+    print(f"Generating {elements_needed} additional data points for {pair_key} for original series: {original_series}")
+    additional_data = np.abs(np.random.normal(loc=mean, scale=std_dev, size=elements_needed))
+    additional_data = np.round(additional_data)
+
+    # Combine the original series with the new data
+    extended_series = original_series + list(additional_data)
+
+    # Store the extended series back into the windowed dictionary
+    new_dict[key] = extended_series
+
+print(new_dict)
 
 # Save results to file
-with open("../data/series-iotj-24h.json", "w") as file:
-    json.dump(windowed_reception, file)
+with open("../data/series-cooja-iotj-24h.json", "w") as file:
+    json.dump(new_dict, file)

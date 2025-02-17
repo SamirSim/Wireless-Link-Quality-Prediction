@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib.pyplot as plt # type: ignore
+import numpy as np # type: ignore
 import sys
 import numpy as np # type: ignore
 import matplotlib.pyplot as plt # type: ignore
@@ -36,22 +36,6 @@ node_mac_map = {
     "m3-163": "9276",
     "m3-166": "9671",
 }
-
-def check_stationarity(time_series):
-    result = adfuller(time_series)
-    p_value = result[1]
-
-    if p_value < 0.05:
-        print("The time series is likely stationary (p-value =", p_value, ")")
-    else:
-        print("The time series is likely non-stationary (p-value =", p_value, ")")
-
-for key, values in data_expe.items():
-    try:
-        print(key)
-        check_stationarity(values)
-    except:
-        pass
 
 # Generate all possible sender-receiver pairs without "m3"
 couples = [(int(sender[3:]), int(receiver[3:]))  for sender, receiver in permutations(node_mac_map.keys(), 2)]

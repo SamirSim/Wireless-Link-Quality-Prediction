@@ -1,8 +1,9 @@
 import json
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from statsmodels.tsa.stattools import adfuller
+import matplotlib.pyplot as plt # type: ignore
+import seaborn as sns # type: ignore
+import numpy as np # type: ignore
+from statsmodels.tsa.stattools import adfuller # type: ignore
+import pandas as pd # type: ignore
 
 # Load JSON files (replace with actual file paths)
 with open("../data/best-model-continuous-24h.json", "r") as f:
@@ -59,7 +60,6 @@ for step in steps:
         plot_data.append({"Step": step, "MAE": value, "Approach": "Adaptive"})
 
 # Convert to DataFrame
-import pandas as pd
 df = pd.DataFrame(plot_data)
 
 # Plot
