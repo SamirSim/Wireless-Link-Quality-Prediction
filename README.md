@@ -12,14 +12,19 @@ This project focuses on collecting time series data from a wireless network, ana
 
 ### `code/` - Data Processing, Modeling & Visualization  
 
-- **`generate_series.py`**: Converts experiment logs into structured JSON time series.  
+- **`generate-series.py`**: Converts experiment logs into structured JSON time series.  
+- **`generate-series-cooja.py`**: Converts Cooja logs into structured JSON time series.
+- **`generate-pdr-cooja.py`**: Generates the mean PDR of each link to be used in Cooja simulations.
 - **`plot-links-comprehensive.py`**: Visualizes time series data for all links.  
+- **`plot-links-cooja.py`**: Visualizes time series data for some links in experiments vs. Cooja.
+- **`plot-links-per-cluster.py`**: Classifies links into clusters and visualizes their behaviour.
 - **`regression-best-model-continuous.py`**:  
   - Trains various models on the generated series.  
   - Applies a calibration process using a **single** selected model for testing.  
 - **`regression-adaptive-model-continuous.py`**:  
   - Trains multiple models and dynamically switches between them for prediction.  
   - Applies an **adaptive calibration** strategy during testing.  
+- **`plot-predictions-adaptive.py`**: Visualizes some links time series vs. the actual predictions of the adaptive approach.
 - **`plot-metrics-general-continuous.py`**: Plots MAE results for both approaches across all links as the prediction step increases.  
 - **`plot-metrics-per-cluster-continuous.py`**:  
   - Groups links into clusters based on quality (mean PDR).  
