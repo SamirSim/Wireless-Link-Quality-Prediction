@@ -4,6 +4,7 @@ import seaborn as sns # type: ignore
 import numpy as np # type: ignore
 from statsmodels.tsa.stattools import adfuller # type: ignore
 import pandas as pd # type: ignore
+import time
 
 # Load JSON files (replace with actual file paths)
 with open("../data/best-model-continuous-24h.json", "r") as f:
@@ -33,6 +34,9 @@ to_plot = ["m3-99_m3-123", "m3-123_m3-99", "m3-123_m3-133", "m3-123_m3-153", "m3
 
 to_plot = ["m3-143_m3-153", "m3-143_m3-159", "m3-150_m3-143", "m3-150_m3-153", "m3-150_m3-163", "m3-163_m3-153", "m3-166_m3-159"]
 
+
+print(len(fixed_data))
+time.sleep(3)
 # Collect mae values
 for link in fixed_data:
     #if link not in to_plot:
@@ -40,6 +44,7 @@ for link in fixed_data:
     for step in fixed_data[link]:
         mae_value = fixed_data[link][step]['mae']
         if mae_value != 0:
+            print(link, step, mae_value)
             fixed_mae[step].append(mae_value)
             cpt += 1
 
@@ -51,6 +56,7 @@ for link in adaptive_data:
         if mae_value != 0:
             adaptive_mae[step].append(mae_value)
 
+print(len(fixed_mae[step]), len(adaptive_mae))
 # Convert data to plotting format
 plot_data = []
 for step in steps:

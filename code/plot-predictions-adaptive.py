@@ -7,6 +7,9 @@ import time # type: ignore
 sns.set_style("whitegrid")
 sns.color_palette("tab10")
 
+# Font size
+plt.rcParams.update({'font.size': 15})
+
 # Load JSON file
 with open("../data/series-iotj-24h.json", "r") as f:
     data_expe = json.load(f)
@@ -44,7 +47,7 @@ rows, cols = 1, 3
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
 
 for fig_num in range(num_figures):
-    fig, axes = plt.subplots(rows, cols, figsize=(13, 5), sharex=True, sharey=True)
+    fig, axes = plt.subplots(rows, cols, figsize=(13, 3), sharex=True, sharey=True)
     fig.subplots_adjust(hspace=0.2, wspace=0.1)
     axes = axes.flatten()
 
@@ -67,13 +70,17 @@ for fig_num in range(num_figures):
         ax = axes[subplot_index]
         ax.set_title(key)
         ax.plot(y_exp, label="Experiments")
-        ax.plot(y_pred, label="Predictions")
+        ax.plot(y_pred, label="Adaptive model", color="red")
 
-        ax.set_xlabel("Time Window")
+        #ax.set_xlabel("Time Window")
         if fig_num == 0 and subplot_index == 0:
             ax.set_ylabel("Number of packets received")
             handles, labels = ax.get_legend_handles_labels()
-            fig.legend(handles, labels, loc="upper right")
+            #fig.legend(handles, labels, loc="upper right")
+            ax.legend()
 
+     # Set a single x-axis label for the entire figure
+    fig.text(0.5, 0.01, "Time interval (x T=50 seconds)", ha="center")
+    plt.tight_layout()
     #plt.show()
     plt.savefig(f"../figures/predictions.pdf", format="pdf", dpi=300)

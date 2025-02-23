@@ -6,6 +6,9 @@ import seaborn as sns # type: ignore
 sns.set_style("whitegrid")
 sns.color_palette("tab10")
 
+# Font size
+plt.rcParams.update({'font.size': 15})
+
 # Load JSON file (replace with actual file path)
 with open("../data/series-iotj-24h.json", "r") as f:
     data_expe = json.load(f)
@@ -17,22 +20,25 @@ def classify_series(time_series):
     mean_value = np.mean(time_series)
     if 0 < mean_value < 9:
         return "Bad"
-    elif 9 <= mean_value < 31:
+    elif 9 <= mean_value < 32:
         return "Average"
     elif 32 <= mean_value < 37:
         return "Good"
-    elif 37 <= mean_value < 50:
+    elif 37 <= mean_value <= 50:
         return "Excellent"
     else:
+        print(mean_value)
         return "Out of range"
 
 # Group links into clusters
 clusters = {"Bad": [], "Average": [], "Good": [], "Excellent": []}
+print(len(data_expe))
 for key, values in data_expe.items():
     cluster = classify_series(values)
     if cluster in clusters:
         clusters[cluster].append(key)
 
+print(clusters)
 # Compute statistics (mean, min, max)
 stats = {}
 for cluster in clusters:
@@ -49,10 +55,10 @@ for ax, cluster in zip(axes, clusters):
     ax.plot(steps, stats[cluster]["mean"], label="Mean", color="blue")
     ax.fill_between(steps, stats[cluster]["min"], stats[cluster]["max"], color="blue", alpha=0.2)
     ax.set_title(f"{cluster} Links (n={len(clusters[cluster])})")
-    ax.set_xlabel("Time Steps")
+    #ax.set_xlabel("Time interval (x T=50 seconds)")
     ax.set_ylabel("Value")
     ax.legend()
-
+fig.text(0.5, 0.01, "Time interval (x T=50 seconds)", ha="center")
 plt.suptitle("Series Evolution per Cluster")
 plt.tight_layout()
 plt.savefig(f"../figures/links-clusters.pdf", format="pdf", dpi=300)
