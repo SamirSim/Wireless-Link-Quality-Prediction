@@ -46,6 +46,21 @@ node_mac_map = {
 PREDICTION_WINDOW = 20 # Number of predictions ahead to make
 PREDICTION_WINDOW_step = 1 # To be used in the for loop
 
+
+def classify_series(time_series):
+    mean_value = np.mean(time_series)
+
+    if 0 < mean_value < 9:
+        return "Bad"
+    elif 9 <= mean_value < 32:
+        return "Average"
+    elif 32 <= mean_value < 37:
+        return "Good"
+    elif 37 <= mean_value <= 50:
+        return "Excellent"
+    else:
+        return "Out of range"
+    
 def create_sequences(data, window_step):
     X, y = [], []
     for i in range(len(data) - window_step):
@@ -109,7 +124,7 @@ print(couples, len(couples))
 
 #couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
 #couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6)]
-couples = [(153,159)]
+couples = [(99,143)]
 k = -1
 
 r_squared_list = []
@@ -125,93 +140,23 @@ decisionTreeRegressor = DecisionTreeRegressor()
 adaBoostRegressor = AdaBoostRegressor()
 extraTreesRegressor = ExtraTreesRegressor()
 kNeighborsRegressor = KNeighborsRegressor()
-lstm = Sequential()
 
 regressors = [randomForestRegressor, svr, gradientBoostingRegressor, decisionTreeRegressor, adaBoostRegressor, extraTreesRegressor]
 #regressors = [svr] # TODO Changed here
 regressor_strings = [str(regressor) for regressor in regressors]
 
-for n, m in couples:
-    k = k + 1
-    #print(k)
-    sender = "m3-"+str(n)
-    receiver = "m3-"+str(m)
-
-    key = sender+"_"+receiver
-
-    data_expe_values = data_expe[key]
-            
-    # split into train and test sets
-    X = data_expe_values
-    size = int(len(X) * 0.3) # First 2/3 of the data are used for training, and the rest is used for testing
-    train, test = X[0:size], X[size:len(X)]
-    history = [x for x in train]
-    predictions = []
-
-    min_error = float("inf")
-
-    for regressor_string in regressor_strings:
-        window_steps = [3, 5, 10, 15, 20] 
-        #window_steps = [5] # TODO Changed this
-        for window_step in window_steps:
-            # Prepare sequences
-            X_train, y_train = create_sequences(train, window_step)
-            
-            regressor = RandomForestRegressor() # Default
-            if 'Sequential' in regressor_string: # LSTM
-                regressor = Sequential()
-                # Normalize data
-                scaler = MinMaxScaler(feature_range=(0, 1))
-                scaled_train = scaler.fit_transform(np.array(train).reshape(-1, 1))
-                scaled_test = scaler.transform(np.array(test).reshape(-1, 1))
-
-                X_train, y_train = create_sequences(scaled_train, window_step)
-                X_test, y_test = create_sequences(scaled_test, window_step)
-                
-                # Reshape input to be [samples, time steps, features]
-                X_train = X_train.reshape(X_train.shape[0], X_train.shape[1], 1)
-                X_test = X_test.reshape(X_test.shape[0], X_test.shape[1], 1)
-                regressor.add(LSTM(50, return_sequences=True, input_shape=(window_step, 1)))
-                regressor.add(LSTM(50, return_sequences=False))
-                regressor.add(Dense(25))
-                regressor.add(Dense(1))
-                regressor.compile(optimizer='adam', loss='mean_absolute_error')
-            elif "RandomForestRegressor" in regressor_string:
-                regressor = RandomForestRegressor()
-            elif "LinearRegression" in regressor_string:
-                regressor = LinearRegression()
-            elif "SVR" in regressor_string:
-                regressor = SVR()
-            elif "GradientBoostingRegressor" in regressor_string:
-                regressor = GradientBoostingRegressor()
-            elif "DecisionTreeRegressor" in regressor_string:
-                regressor = DecisionTreeRegressor()
-            elif "AdaBoostRegressor" in regressor_string:
-                regressor = AdaBoostRegressor()
-            elif "ExtraTreesRegressor" in regressor_string:
-                regressor = ExtraTreesRegressor()
-            elif "KNeighborsRegressor" in regressor_string:
-                regressor = KNeighborsRegressor()
-
-            error = evaluate_model(regressor, X_train, y_train)
-
-            #print(regressor, window_step, error)
-            #time.sleep(1)
-            if error < min_error:
-                min_error = error
-                best_regressor = regressor
-                best_window_step = window_step
-
-    best_cfgs[key] = {"regressor": str(best_regressor), "window_step": best_window_step, "error": min_error}
-
-print(best_cfgs)
-
-with open('../data/best-model-continuous-24h-config.json', 'w') as file:
-    json.dump(best_cfgs, file)
+# Open the file to read the best configurations
+with open('../data/best-model-continuous-24h-config.json', 'r') as file:
+    best_cfgs = json.load(file)
 
 #time.sleep(2)
 
 res_final = {}
+times_cluster = {}
+times_cluster["Bad"] = []
+times_cluster["Average"] = []
+times_cluster["Good"] = []
+times_cluster["Excellent"] = []
 for n, m in couples:
     k = k + 1
     result = {}
@@ -293,7 +238,7 @@ for n, m in couples:
     for i in range(1, PREDICTION_WINDOW+1, PREDICTION_WINDOW_step):
         res[i] = []
 
-    while index < len(X_test):
+    while index < 1:
         start = time.time()
         # Make PREDICTION_WINDOW predictions
         input_window = X_test[index]
@@ -321,14 +266,21 @@ for n, m in couples:
         regressor.fit(X_train, y_train)
         #print("Refitting with train appended with: ", x_fit, " y_test: ", y_fit)
         end = time.time()
+        if classify_series(data_expe_values) == "Bad":
+            times_cluster["Bad"].append(end - start)
+        elif classify_series(data_expe_values) == "Average":
+            times_cluster["Average"].append(end - start)
+        elif classify_series(data_expe_values) == "Good":
+            times_cluster["Good"].append(end - start)
+        elif classify_series(data_expe_values) == "Excellent":
+            times_cluster["Excellent"].append(end - start)
+
         print(index, " Fit and prediction time: ", end-start)
 
         #time.sleep(1)
         index = index + 1
 
     print(res)
-
-    time.sleep(5)
 
     error = 0
     for key_, value in res.items():
@@ -339,8 +291,8 @@ for n, m in couples:
     
     res_final[key] = result
 
-print(res_final)
+print(times_cluster)
 #sys.exit(0)
 # Save the results to a file
-#with open('../data/best-model-continuous-24h.json', 'w') as file:
-    #json.dump(res_final, file)
+#with open('../data/best-times-clusters.json', 'w') as file:
+    #json.dump(times_cluster, file)

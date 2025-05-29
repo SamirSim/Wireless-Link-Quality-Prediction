@@ -41,7 +41,7 @@ couples = [(150, 163), (133, 153), (166, 163)]
 all_values = []
 for key, values in data_expe.items():
     all_values.extend(values)
-
+"""
 subplots_per_figure = 3
 rows, cols = 1, 3
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
@@ -84,3 +84,29 @@ for fig_num in range(num_figures):
     plt.tight_layout()
     #plt.show()
     plt.savefig(f"../figures/predictions.pdf", format="pdf", dpi=300)
+"""
+
+
+# Plot each couple individually
+for n, m in couples:
+    sender = f"m3-{n}"
+    receiver = f"m3-{m}"
+    key = f"{sender}_{receiver}"
+
+    if key not in data_expe:
+        continue
+
+    y_pred = np.array(data_predictions[key])
+    y_exp = np.array(data_expe[key])[-len(y_pred):]
+
+    fig, ax = plt.subplots(figsize=(6, 3))
+    #ax.set_title(f"{key}")
+    ax.plot(y_exp, label="Experiments")
+    ax.plot(y_pred, label="Adaptive model", color="red")  # Uncomment if needed
+
+    ax.set_ylabel("# of received packets")
+    ax.set_xlabel("Time interval (T=50 seconds)")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(f"../figures/{key}-pred.pdf", format="pdf")
+    plt.close(fig)

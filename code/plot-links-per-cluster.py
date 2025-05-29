@@ -48,6 +48,7 @@ for cluster in clusters:
         "max": [np.max([data_expe[link][step] for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
     }
 
+"""
 # Plot results
 fig, axes = plt.subplots(1, len(clusters), figsize=(15, 5), sharex=True, sharey=True)
 
@@ -63,3 +64,21 @@ plt.suptitle("Series Evolution per Cluster")
 plt.tight_layout()
 plt.savefig(f"../figures/links-clusters.pdf", format="pdf", dpi=300)
 #plt.show()
+"""
+# Plot and save figures
+for cluster in clusters:
+    fig, ax = plt.subplots(figsize=(6, 3))
+
+    ax.plot(steps, stats[cluster]["mean"], label="Mean", color="blue")
+    ax.fill_between(steps, stats[cluster]["min"], stats[cluster]["max"], color="blue", alpha=0.2)
+
+    #ax.set_title(f"{cluster} Links (n={len(clusters[cluster])})")
+    # Uncomment the following line if you want to add X-axis label
+    ax.set_xlabel("Time interval (x T=50 seconds)")
+
+    ax.set_ylabel("Value")
+    ax.legend()
+
+    fig.tight_layout()
+    fig.savefig(f"../figures/{cluster.lower()}_cluster_plot.pdf", format="pdf")
+    plt.close(fig)  # Close the figure to avoid display if running interactively

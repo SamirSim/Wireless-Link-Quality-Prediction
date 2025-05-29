@@ -60,7 +60,7 @@ for key, values in data_expe.items():
     elif cluster == "Excellent":
         to_plot_excellent.append(key)
 
-# Collect MAE values per cluster
+# Collect MSE values per cluster
 cluster_dict = {
     "Very Bad": to_plot_very_bad,
     "Bad": to_plot_bad,
@@ -71,27 +71,34 @@ cluster_dict = {
 
 print(cluster_dict, [len(cluster_dict[category]) for category in cluster_dict])
 
-# Initialize MAE data per cluster
-fixed_mae_per_cluster = {cluster: {step: [] for step in steps} for cluster in cluster_dict}
-adaptive_mae_per_cluster = {cluster: {step: [] for step in steps} for cluster in cluster_dict}
+# Initialize MSE data per cluster
+fixed_MSE_per_cluster = {cluster: {step: [] for step in steps} for cluster in cluster_dict}
+adaptive_MSE_per_cluster = {cluster: {step: [] for step in steps} for cluster in cluster_dict}
 
-# Collect MAE values from fixed data
+# Collect MSE values from fixed data
 for link in fixed_data:
     for cluster, links in cluster_dict.items():
         if link in links:
             for step in fixed_data[link]:
-                mae_value = fixed_data[link][step]['mae']
-                if mae_value != 0:
-                    fixed_mae_per_cluster[cluster][step].append(mae_value)
+                MSE_value = fixed_data[link][step]['mse']
+                if MSE_value != 0:
+                    fixed_MSE_per_cluster[cluster][step].append(MSE_value)
 
-# Collect MAE values from adaptive data
+# Collect MSE values from adaptive data
 for link in adaptive_data:
     for cluster, links in cluster_dict.items():
         if link in links:
             for step in adaptive_data[link]:
-                mae_value = adaptive_data[link][step]['mae']
-                if mae_value != 0:
-                    adaptive_mae_per_cluster[cluster][step].append(mae_value)
+                MSE_value = adaptive_data[link][step]['mse']
+                if MSE_value != 0:
+                    adaptive_MSE_per_cluster[cluster][step].append(MSE_value)
+
+# Convert MSE to RMSE
+for cluster in fixed_MSE_per_cluster:
+    for step in fixed_MSE_per_cluster[cluster]:
+        fixed_MSE_per_cluster[cluster][step] = [np.sqrt(mse) for mse in fixed_MSE_per_cluster[cluster][step]]
+    for step in adaptive_MSE_per_cluster[cluster]:
+        adaptive_MSE_per_cluster[cluster][step] = [np.sqrt(mse) for mse in adaptive_MSE_per_cluster[cluster][step]]
 
 # Plotting
 #fig, axes = plt.subplots(2, 2, figsize=(14, 10))  # 2x2 grid for 4 clusters
@@ -106,10 +113,10 @@ for ax, cluster, color in zip(axes.flat, clusters, colors):
     
     # Convert to DataFrame for plotting
     for step in steps:
-        for value in fixed_mae_per_cluster[cluster][step]:
-            plot_data.append({"Step": step, "MAE": value, "Approach": "Fixed"})
-        for value in adaptive_mae_per_cluster[cluster][step]:
-            plot_data.append({"Step": step, "MAE": value, "Approach": "Adaptive"})
+        for value in fixed_MSE_per_cluster[cluster][step]:
+            plot_data.append({"Step": step, "MSE": value, "Approach": "Fixed"})
+        for value in adaptive_MSE_per_cluster[cluster][step]:
+            plot_data.append({"Step": step, "MSE": value, "Approach": "Adaptive"})
     
     df = pd.DataFrame(plot_data)
     
@@ -117,11 +124,11 @@ for ax, cluster, color in zip(axes.flat, clusters, colors):
         df["Step"] = df["Step"].astype(int)
         # Keep only two steps at each time
         df = df[df["Step"].isin([1, 3, 5, 7, 9, 11, 13, 15, 17, 19])]
-        sns.boxplot(x="Step", y="MAE", hue="Approach", data=df, ax=ax, palette=["green", "red"], order=sorted(df["Step"].unique()))
+        sns.boxplot(x="Step", y="MSE", hue="Approach", data=df, ax=ax, palette=["green", "red"], order=sorted(df["Step"].unique()))
         
         ax.set_title(f"{cluster} Links (n={len(cluster_dict[cluster])})")
         ax.set_xlabel("")
-        ax.set_ylabel("MAE")
+        ax.set_ylabel("MSE")
         ax.legend(title="Approach")
         ax.grid(True, linestyle="--", alpha=0.6)
 
@@ -130,7 +137,7 @@ plt.tight_layout()
 fig.text(0.5, 0.01, "Prediction Step", ha="center")
 
 #plt.show()
-plt.savefig(f"../figures/mae-clusters.pdf", format="pdf", dpi=300)
+plt.savefig(f"../figures/MSE-clusters.pdf", format="pdf", dpi=300)
 """
 
 
@@ -138,10 +145,10 @@ for cluster in clusters:
     plot_data = []
 
     for step in steps:
-        for value in fixed_mae_per_cluster[cluster][step]:
-            plot_data.append({"Step": step, "MAE": value, "Approach": "Fixed"})
-        for value in adaptive_mae_per_cluster[cluster][step]:
-            plot_data.append({"Step": step, "MAE": value, "Approach": "Adaptive"})
+        for value in fixed_MSE_per_cluster[cluster][step]:
+            plot_data.append({"Step": step, "MSE": value, "Approach": "Fixed"})
+        for value in adaptive_MSE_per_cluster[cluster][step]:
+            plot_data.append({"Step": step, "MSE": value, "Approach": "Adaptive"})
     
     df = pd.DataFrame(plot_data)
     df["Step"] = df["Step"].astype(int)
@@ -152,14 +159,14 @@ for cluster in clusters:
         continue
 
     fig, ax = plt.subplots(figsize=(6, 3))
-    sns.boxplot(x="Step", y="MAE", hue="Approach", data=df, ax=ax,
+    sns.boxplot(x="Step", y="MSE", hue="Approach", data=df, ax=ax,
                 palette=["green", "red"], order=sorted(df["Step"].unique()))
 
     #ax.set_title(f"{cluster} Links (n={len(cluster_dict[cluster])})")
     ax.set_xlabel("Prediction Step")
-    ax.set_ylabel("MAE")
+    ax.set_ylabel("RMSE")
     ax.legend(title="Approach")
     ax.grid(True, linestyle="--", alpha=0.6)
     fig.tight_layout()
-    fig.savefig(f"../figures/mae-{cluster.lower()}.pdf", format="pdf", dpi=300)
+    fig.savefig(f"../figures/MSE-{cluster.lower()}.pdf", format="pdf", dpi=300)
     plt.close(fig)

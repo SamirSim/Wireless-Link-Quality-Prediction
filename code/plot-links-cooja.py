@@ -37,6 +37,7 @@ all_values = []
 for key, values in data_expe.items():
     all_values.extend(values)
 
+"""
 subplots_per_figure = 3
 rows, cols = 1, 3
 num_figures = (len(couples) + subplots_per_figure - 1) // subplots_per_figure
@@ -65,10 +66,10 @@ for fig_num in range(num_figures):
         ax = axes[subplot_index]
         ax.set_title(key)
         ax.plot(y_exp, label="Experiments")
-        ax.plot(y_cooja, label="Cooja")
+        #ax.plot(y_cooja, label="Simulation")
         print(fig_num, subplot_index)
         if fig_num == 0 and subplot_index == 0:
-            ax.set_ylabel("Number of packets received")
+            ax.set_ylabel("# of received packets")
             #ax.set_xlabel("Time interval (T=50 seconds)")
             handles, labels = ax.get_legend_handles_labels()
             #fig.legend(handles, labels, loc="upper right")
@@ -78,4 +79,30 @@ for fig_num in range(num_figures):
     fig.text(0.5, 0.01, "Time interval (x T=50 seconds)", ha="center")
     plt.tight_layout()
     #plt.show()
-    plt.savefig(f"../figures/links-comparison.pdf", format="pdf", dpi=300)
+    plt.savefig(f"../figures/links-comparison-audition-expe.pdf", format="pdf", dpi=300)
+"""
+
+
+# Plot each couple individually
+for n, m in couples:
+    sender = f"m3-{n}"
+    receiver = f"m3-{m}"
+    key = f"{sender}_{receiver}"
+
+    if key not in data_expe:
+        continue
+
+    y_exp = np.array(data_expe[key])
+    y_cooja = np.array(data_cooja.get(key, []))  # Use empty array if missing
+
+    fig, ax = plt.subplots(figsize=(6, 3))
+    #ax.set_title(f"{key}")
+    ax.plot(y_exp, label="Experiments")
+    ax.plot(y_cooja, label="Simulation")  # Uncomment if needed
+
+    ax.set_ylabel("# of received packets")
+    ax.set_xlabel("Time interval (T=50 seconds)")
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(f"../figures/{key}.pdf", format="pdf")
+    plt.close(fig)
