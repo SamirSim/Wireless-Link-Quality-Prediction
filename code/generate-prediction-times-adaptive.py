@@ -216,8 +216,8 @@ for n, m in couples:
         for i in range(1, PREDICTION_WINDOW+1, PREDICTION_WINDOW_step):
             res[i] = []
         
-        
-        while index < 1:
+        avg_time = 0
+        while index < 100:
             start = time.time()
             # Make PREDICTION_WINDOW predictions
             input_window = X_test[index]
@@ -253,25 +253,9 @@ for n, m in couples:
             regressor.fit(X_train, y_train)
             #print("Refitting with train appended with: ", x_fit, " y_test: ", y_fit)
             end = time.time()
-
-            if classify_series(data_expe_values) == "Bad":
-                if key not in times_cluster["Bad"]:
-                    times_cluster["Bad"][key] = []
-                times_cluster["Bad"][key].append(end - start)
-            elif classify_series(data_expe_values) == "Average":
-                if key not in times_cluster["Average"]:
-                    times_cluster["Average"][key] = []
-                times_cluster["Average"][key].append(end - start)
-            elif classify_series(data_expe_values) == "Good":
-                if key not in times_cluster["Good"]:
-                    times_cluster["Good"][key] = []
-                times_cluster["Good"][key].append(end - start)
-            elif classify_series(data_expe_values) == "Excellent":
-                if key not in times_cluster["Excellent"]:
-                    times_cluster["Excellent"][key] = []
-                times_cluster["Excellent"][key].append(end - start)
-            #time.sleep(1)
-            index = index + 1
+            print("Time taken for prediction: ", end - start, " seconds for link: ", key , " regressor: ", regressor_string)
+            avg_time += (end - start)
+            #time.sleep(0.1)
 
             # This part is to calculate the error for each model for each prediction iteratively at each interval, for the last PREDICTION_WINDOW predictions
             #print("Compare between prediction list: ", last_prediction_list, " last_y: ", last_y, " for model: ", regressor)
@@ -284,7 +268,29 @@ for n, m in couples:
             if index + window_step < len(test):
                 last_y = np.append(last_y, test[window_step+index])
             last_y = last_y[1:]
+            
+            index = index + 1
             #time.sleep(2)
+        avg_time = avg_time / 100
+        if classify_series(data_expe_values) == "Bad":
+            if key not in times_cluster["Bad"]:
+                times_cluster["Bad"][key] = []
+            times_cluster["Bad"][key].append(avg_time)
+            print("Bad: ", key, " time: ",avg_time)
+        elif classify_series(data_expe_values) == "Average":
+            if key not in times_cluster["Average"]:
+                times_cluster["Average"][key] = []
+            times_cluster["Average"][key].append(avg_time)
+        elif classify_series(data_expe_values) == "Good":
+            if key not in times_cluster["Good"]:
+                times_cluster["Good"][key] = []
+            times_cluster["Good"][key].append(avg_time)
+        elif classify_series(data_expe_values) == "Excellent":
+            if key not in times_cluster["Excellent"]:
+                times_cluster["Excellent"][key] = []
+            times_cluster["Excellent"][key].append(avg_time)
+        #time.sleep(1)
+
         #print("errors_list: ", errors_list)
         #time.sleep(2)
         next_predictions[regressor] = res

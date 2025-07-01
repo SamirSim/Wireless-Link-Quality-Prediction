@@ -13,6 +13,8 @@ plt.rcParams.update({'font.size': 15})
 with open("../data/series-iotj-24h.json", "r") as f:
     data_expe = json.load(f)
 
+
+
 # Extract unique time steps
 steps = sorted({step for series in data_expe.values() for step in range(len(series))})
 
@@ -43,9 +45,9 @@ print(clusters)
 stats = {}
 for cluster in clusters:
     stats[cluster] = {
-        "mean": [np.mean([data_expe[link][step] for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
-        "min": [np.min([data_expe[link][step] for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
-        "max": [np.max([data_expe[link][step] for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
+        "mean": [np.mean([data_expe[link][step]*2 for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
+        "min": [np.min([data_expe[link][step]*2 for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
+        "max": [np.max([data_expe[link][step]*2 for link in clusters[cluster] if step < len(data_expe[link])]) for step in steps],
     }
 
 """
@@ -76,7 +78,7 @@ for cluster in clusters:
     # Uncomment the following line if you want to add X-axis label
     ax.set_xlabel("Time interval (x T=50 seconds)")
 
-    ax.set_ylabel("Value")
+    ax.set_ylabel("PDR (%)")
     ax.legend()
 
     fig.tight_layout()

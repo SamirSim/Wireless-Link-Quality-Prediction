@@ -124,7 +124,7 @@ print(couples, len(couples))
 
 #couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
 #couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6)]
-couples = [(99,143)]
+#couples = [(99,143)]
 k = -1
 
 r_squared_list = []
@@ -180,9 +180,9 @@ for n, m in couples:
     min_error = best_cfgs[key]["error"]
         
     # The best regressor and window step are found
-    print("couple: ", (n,m), " Best regressor: ", best_regressor, " window step: ", best_window_step, " error: ", min_error)
+    #print("couple: ", (n,m), " Best regressor: ", best_regressor, " window step: ", best_window_step, " error: ", min_error)
 
-    print(X)
+    #print(X)
     #time.sleep(2)
     
     window_step = best_window_step
@@ -231,14 +231,15 @@ for n, m in couples:
 
     X_test, y_test = create_sequences(test, window_step)
 
-    print("X_test: ", X_test, " y_test: ", y_test)
+    #print("X_test: ", X_test, " y_test: ", y_test)
 
     index = 0
     res = {}
     for i in range(1, PREDICTION_WINDOW+1, PREDICTION_WINDOW_step):
         res[i] = []
 
-    while index < 1:
+    avg_time = 0
+    while index < 100:
         start = time.time()
         # Make PREDICTION_WINDOW predictions
         input_window = X_test[index]
@@ -266,27 +267,31 @@ for n, m in couples:
         regressor.fit(X_train, y_train)
         #print("Refitting with train appended with: ", x_fit, " y_test: ", y_fit)
         end = time.time()
-        if classify_series(data_expe_values) == "Bad":
-            times_cluster["Bad"].append(end - start)
-        elif classify_series(data_expe_values) == "Average":
-            times_cluster["Average"].append(end - start)
-        elif classify_series(data_expe_values) == "Good":
-            times_cluster["Good"].append(end - start)
-        elif classify_series(data_expe_values) == "Excellent":
-            times_cluster["Excellent"].append(end - start)
+        avg_time += (end - start)
+        index = index + 1
+    
+    avg_time = avg_time / 100
+    if classify_series(data_expe_values) == "Bad":
+        print("link: ", key, " regressor: ", regressor_string, " Bad average time: ", avg_time)
+        times_cluster["Bad"].append(avg_time)
+    elif classify_series(data_expe_values) == "Average":
+        times_cluster["Average"].append(avg_time)
+    elif classify_series(data_expe_values) == "Good":
+        times_cluster["Good"].append(avg_time)
+    elif classify_series(data_expe_values) == "Excellent":
+        times_cluster["Excellent"].append(avg_time)
 
-        print(index, " Fit and prediction time: ", end-start)
+    #print(index, " Fit and prediction time: ", avg_time)
 
         #time.sleep(1)
-        index = index + 1
 
-    print(res)
+    #print(res)
 
     error = 0
     for key_, value in res.items():
         mse = mean_squared_error(y_train[-len(value):], value)
         mae = mean_absolute_error(y_train[-len(value):], value)
-        print(key_, " MSE: ", mse, " MAE: ", mae)
+        #print(key_, " MSE: ", mse, " MAE: ", mae)
         result[key_] = {"mse": mse, "mae": mae}
     
     res_final[key] = result
@@ -294,5 +299,5 @@ for n, m in couples:
 print(times_cluster)
 #sys.exit(0)
 # Save the results to a file
-#with open('../data/best-times-clusters.json', 'w') as file:
-    #json.dump(times_cluster, file)
+with open('../data/best-times-clusters.json', 'w') as file:
+    json.dump(times_cluster, file)

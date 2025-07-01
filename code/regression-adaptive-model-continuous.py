@@ -44,6 +44,8 @@ PREDICTION_WINDOW = 20 # Number of predictions ahead to make
 PREDICTION_WINDOW_step = 1 # To be used in the for loop
 HISTORY_WINDOW = 5 # Number of last prediction to be used for evaluation to select the best model in the adaptive approach 
 
+FOUND_CONFIG = True # Set to True if the best configurations have already been found and saved in the file, otherwise it will search for the best configurations
+
 def create_sequences(data, window_step):
     X, y = [], []
     for i in range(len(data) - window_step):
@@ -99,11 +101,19 @@ with open('../data/series-iotj-24h.json', 'r') as file:
 # Generate all possible sender-receiver pairs without "m3"
 couples = [(int(sender[3:]), int(receiver[3:]))  for sender, receiver in permutations(node_mac_map.keys(), 2)]
 
+#couples = [(150, 163)]
+
+#couples = [(99, 123), (99, 133), (99, 143), (99, 150), (99, 153), (99, 159), (99, 163), (99, 166), (123, 99), (123, 133), (123, 143), (123, 150)]
+#couples = [(123, 153), (123, 159), (123, 163), (123, 166), (133, 99), (133, 123), (133, 143), (133, 150), (133, 153), (133, 159), (133, 163), (133, 166)]
+#couples = [(143, 99), (143, 123), (143, 133), (143, 150), (143, 153), (143, 159), (143, 163), (143, 166), (150, 99), (150, 123), (150, 133), (150, 143)]
+#couples = [(150, 153), (150, 159), (150, 163), (150, 166), (153, 99), (153, 123), (153, 133), (153, 143), (153, 150), (153, 159), (153, 163), (153, 166)]
+#couples = [(159, 99), (159, 123), (159, 133), (159, 143), (159, 150), (159, 153), (159, 163), (159, 166), (163, 99), (163, 123), (163, 133), (163, 143)]
+couples = [(163, 150), (163, 153), (163, 159), (163, 166), (166, 99), (166, 123), (166, 133), (166, 143), (166, 150), (166, 153), (166, 159), (166, 163)]
+
 print(couples, len(couples))
 
-#couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6), (10, 2), (11, 2), (11,6), (4, 5), (4, 6), (5, 6), (5, 4), (6, 4), (6, 5), (6, 10), (6, 9)]
-#couples = [(2, 10), (2, 9), (7, 9), (7, 6), (10, 6)]
-#couples = [(143,159)]
+time.sleep(2)
+
 k = -1
 
 r_squared_list = []
@@ -124,71 +134,79 @@ regressors = [randomForestRegressor, svr, gradientBoostingRegressor, decisionTre
 #regressors = [randomForestRegressor, svr] # TODO Changed here
 regressor_strings = [str(regressor) for regressor in regressors]
 
-for n, m in couples:
-    k = k + 1
-    print(k)
-    sender = "m3-"+str(n)
-    receiver = "m3-"+str(m)
+if not FOUND_CONFIG:
+    for n, m in couples:
+        k = k + 1
+        print(k)
+        sender = "m3-"+str(n)
+        receiver = "m3-"+str(m)
 
-    key = sender+"_"+receiver
+        key = sender+"_"+receiver
 
-    data_expe_values = data_expe[key]
+        data_expe_values = data_expe[key]
+                
+        # split into train and test sets
+        X = data_expe_values
+        #X = [x for x in range(0, 80)] # TODO Changed here
+        size = int(len(X) * 0.3) # First 2/3 of the data are used for training, and the rest is used for testing
+        train, test = X[0:size], X[size:len(X)]
+        history = [x for x in train]
+        predictions = []
+
+        min_error = float("inf")
+        res = {}
+        for regressor_string in regressor_strings:
+            min_error_regressor = float("inf")
+            window_steps = [3, 5, 10, 15, 20] 
+            #window_steps = [5] # TODO Changed here
+            for window_step in window_steps:
+                # Prepare sequences
+                X_train, y_train = create_sequences(train, window_step)
+                
+                regressor = RandomForestRegressor() # Default
+                if "RandomForestRegressor" in regressor_string:
+                    regressor = RandomForestRegressor()
+                elif "LinearRegression" in regressor_string:
+                    regressor = LinearRegression()
+                elif "SVR" in regressor_string:
+                    regressor = SVR()
+                elif "GradientBoostingRegressor" in regressor_string:
+                    regressor = GradientBoostingRegressor()
+                elif "DecisionTreeRegressor" in regressor_string:
+                    regressor = DecisionTreeRegressor()
+                elif "AdaBoostRegressor" in regressor_string:
+                    regressor = AdaBoostRegressor()
+                elif "ExtraTreesRegressor" in regressor_string:
+                    regressor = ExtraTreesRegressor()
+                elif "KNeighborsRegressor" in regressor_string:
+                    regressor = KNeighborsRegressor()
+
+                error = evaluate_model(regressor, X_train, y_train)
+
+                #print(regressor, window_step, error)
+                #time.sleep(1)
+                if error < min_error_regressor:
+                    min_error_regressor = error
+                    best_window_step_regressor = window_step
             
-    # split into train and test sets
-    X = data_expe_values
-    #X = [x for x in range(0, 80)] # TODO Changed here
-    size = int(len(X) * 0.3) # First 2/3 of the data are used for training, and the rest is used for testing
-    train, test = X[0:size], X[size:len(X)]
-    history = [x for x in train]
-    predictions = []
+            res[regressor_string] = {"window_step": best_window_step_regressor, "error": min_error_regressor}
+        best_cfgs[key] = res
 
-    min_error = float("inf")
-    res = {}
-    for regressor_string in regressor_strings:
-        min_error_regressor = float("inf")
-        window_steps = [3, 5, 10, 15, 20] 
-        #window_steps = [5] # TODO Changed here
-        for window_step in window_steps:
-            # Prepare sequences
-            X_train, y_train = create_sequences(train, window_step)
-            
-            regressor = RandomForestRegressor() # Default
-            if "RandomForestRegressor" in regressor_string:
-                regressor = RandomForestRegressor()
-            elif "LinearRegression" in regressor_string:
-                regressor = LinearRegression()
-            elif "SVR" in regressor_string:
-                regressor = SVR()
-            elif "GradientBoostingRegressor" in regressor_string:
-                regressor = GradientBoostingRegressor()
-            elif "DecisionTreeRegressor" in regressor_string:
-                regressor = DecisionTreeRegressor()
-            elif "AdaBoostRegressor" in regressor_string:
-                regressor = AdaBoostRegressor()
-            elif "ExtraTreesRegressor" in regressor_string:
-                regressor = ExtraTreesRegressor()
-            elif "KNeighborsRegressor" in regressor_string:
-                regressor = KNeighborsRegressor()
+    print(best_cfgs)
+    #time.sleep(2)
 
-            error = evaluate_model(regressor, X_train, y_train)
+    with open('../data/adaptive-model-continuous-24h-config.json', 'w') as file:
+        json.dump(best_cfgs, file)
+else:
+    # Load the best configurations from the file
+    with open('../data/adaptive-model-continuous-24h-config.json', 'r') as file:
+        best_cfgs = json.load(file)
 
-            #print(regressor, window_step, error)
-            #time.sleep(1)
-            if error < min_error_regressor:
-                min_error_regressor = error
-                best_window_step_regressor = window_step
-        
-        res[regressor_string] = {"window_step": best_window_step_regressor, "error": min_error_regressor}
-    best_cfgs[key] = res
-
-print(best_cfgs)
-#time.sleep(2)
-
-with open('../data/adaptive-model-continuous-24h-config.json', 'w') as file:
-    json.dump(best_cfgs, file)
+print("Best configurations loaded: ", best_cfgs)
 
 res_final = {}
 for n, m in couples:
+
     k = k + 1
     result = {}
     #print(k)
@@ -390,10 +408,10 @@ for n, m in couples:
 
     #print("Result: ", result)
     #print(result)
-    res_final[key] = result
+    res_final[key] = best_prediction
 
 print(res_final)
 #sys.exit(0)
 # Save the results to a file
-with open('../data/adaptive-model-continuous-24h.json', 'w') as file:
+with open('../data/adaptive-model-continuous-24h-predictions-6.json', 'w') as file:
     json.dump(res_final, file)

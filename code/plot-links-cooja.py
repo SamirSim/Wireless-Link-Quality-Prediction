@@ -97,10 +97,10 @@ for n, m in couples:
 
     fig, ax = plt.subplots(figsize=(6, 3))
     #ax.set_title(f"{key}")
-    ax.plot(y_exp, label="Experiments")
-    ax.plot(y_cooja, label="Simulation")  # Uncomment if needed
+    ax.plot(y_exp*2, label="Experiments")
+    ax.plot(y_cooja*2, label="Simulation")  # Uncomment if needed
 
-    ax.set_ylabel("# of received packets")
+    ax.set_ylabel("PDR (%)")
     ax.set_xlabel("Time interval (T=50 seconds)")
     ax.legend()
     fig.tight_layout()
