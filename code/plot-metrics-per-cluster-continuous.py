@@ -80,7 +80,7 @@ for link in fixed_data:
     for cluster, links in cluster_dict.items():
         if link in links:
             for step in fixed_data[link]:
-                mae_value = fixed_data[link][step]['mae']
+                mae_value = fixed_data[link][step]['mae'] *2
                 if mae_value != 0:
                     fixed_mae_per_cluster[cluster][step].append(mae_value)
 
@@ -89,7 +89,7 @@ for link in adaptive_data:
     for cluster, links in cluster_dict.items():
         if link in links:
             for step in adaptive_data[link]:
-                mae_value = adaptive_data[link][step]['mae']
+                mae_value = adaptive_data[link][step]['mae'] *2
                 if mae_value != 0:
                     adaptive_mae_per_cluster[cluster][step].append(mae_value)
 
@@ -157,7 +157,7 @@ for cluster in clusters:
 
     #ax.set_title(f"{cluster} Links (n={len(cluster_dict[cluster])})")
     ax.set_xlabel("Prediction Step")
-    ax.set_ylabel("MAE")
+    ax.set_ylabel("MAE (%)")
     ax.legend(title="Approach")
     ax.grid(True, linestyle="--", alpha=0.6)
     fig.tight_layout()
